@@ -1,0 +1,615 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { FunctionRef } from '@/components/FunctionRef'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Vesting Contract" 
+  description="Create time-locked token distribution schedules with linear, cliff, and hybrid vesting models"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Contracts', href: '/docs/contracts' },
+    { label: 'Vesting Contract', href: '/docs/contracts/vesting' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Vesting Contract enables you to create time-locked token distribution schedules. This is essential for projects that need to distribute tokens to teams, advisors, or investors over time to align incentives and prevent immediate dumping.
+
+### Vesting Models Supported
+
+- **Linear Vesting**: Tokens unlock gradually over time in a straight line
+- **Cliff Vesting**: All tokens unlock at once after a waiting period  
+- **Hybrid Vesting**: Combines cliff and linear (e.g., 25% cliff after 1 year, then linear over 3 years)
+
+### Key Features
+
+- **Flexible Schedules**: Support for any vesting timeline and structure
+- **Multiple Beneficiaries**: Create vesting schedules for multiple addresses
+- **Revocable Schedules**: Optional ability to revoke unvested tokens
+- **Partial Claims**: Beneficiaries can claim available tokens at any time
+- **Schedule Queries**: Check vesting progress and claimable amounts
+
+<CalloutBox type="info" title="Contract Address">
+**<NetworkBadge network="testnet" />** `CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB`  
+**<NetworkBadge network="mainnet" />** `C2222222222222222222222222222222222222222222222222222222`
+</CalloutBox>
+
+## Vesting Models Explained
+
+### Linear Vesting
+
+Tokens unlock gradually over the vesting period:
+
+```
+Vesting Amount: 1,000,000 tokens
+Start Date: January 1, 2024  
+Duration: 24 months (730 days)
+Daily Unlock: ~1,370 tokens per day
+
+Timeline:
+Day 0:    0 tokens claimable
+Day 365:  500,000 tokens claimable (50%)
+Day 730:  1,000,000 tokens claimable (100%)
+```
+
+### Cliff Vesting
+
+All tokens unlock at once after a waiting period:
+
+```
+Vesting Amount: 1,000,000 tokens
+Cliff Period: 12 months
+Unlock Date: January 1, 2025
+
+Timeline:  
+Before Jan 1, 2025: 0 tokens claimable
+After Jan 1, 2025:  1,000,000 tokens claimable
+```
+
+### Hybrid Vesting
+
+Combines cliff and linear vesting:
+
+```
+Total Amount: 1,000,000 tokens
+Cliff: 25% (250,000 tokens) after 12 months
+Linear: 75% (750,000 tokens) over 36 months after cliff
+
+Timeline:
+Month 0:  0 tokens claimable
+Month 12: 250,000 tokens claimable (cliff)  
+Month 24: 500,000 tokens claimable (cliff + 50% linear)
+Month 48: 1,000,000 tokens claimable (100%)
+```
+
+## Contract Functions
+
+### Core Functions
+
+<FunctionRef
+  name="create_vesting_schedule"
+  signature="create_vesting_schedule(token: Address, beneficiary: Address, total_amount: u128, start_time: u64, cliff_duration: u64, vesting_duration: u64, revocable: bool)"
+  description="Creates a new vesting schedule for a beneficiary. The caller must have sufficient tokens and approve the contract to spend them."
+  parameters={[
+    {
+      name: "token",
+      type: "Address", 
+      description: "The token contract address to vest"
+    },
+    {
+      name: "beneficiary",
+      type: "Address",
+      description: "The address that will receive the vested tokens"
+    },
+    {
+      name: "total_amount", 
+      type: "u128",
+      description: "Total amount of tokens to vest (in stroops)"
+    },
+    {
+      name: "start_time",
+      type: "u64", 
+      description: "Unix timestamp when vesting begins"
+    },
+    {
+      name: "cliff_duration",
+      type: "u64",
+      description: "Duration of cliff period in seconds (0 for no cliff)"
+    },
+    {
+      name: "vesting_duration", 
+      type: "u64",
+      description: "Total vesting duration in seconds"
+    },
+    {
+      name: "revocable",
+      type: "bool",
+      description: "Whether the schedule can be revoked by the creator"
+    }
+  ]}
+  returns={{
+    type: "u64",
+    description: "The unique schedule ID for this vesting schedule"
+  }}
+  errors={[
+    "InsufficientAllowance - Caller hasn't approved enough tokens",
+    "InsufficientBalance - Caller doesn't have enough tokens", 
+    "InvalidDuration - Vesting duration must be greater than cliff duration",
+    "InvalidAmount - Amount must be greater than 0",
+    "InvalidStartTime - Start time cannot be in the past"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Create 4-year vesting with 1-year cliff
+# 1,000,000 tokens, 25% cliff, 75% linear over 3 years
+
+stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GCREATOR... \\
+  -- create_vesting_schedule \\
+  --token CAAAA... \\
+  --beneficiary GTEAMMEMBER... \\
+  --total_amount 10000000000000 \\
+  --start_time 1704067200 \\
+  --cliff_duration 31536000 \\
+  --vesting_duration 126144000 \\
+  --revocable true
+
+# Returns: schedule_id = 1`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="claim_tokens"
+  signature="claim_tokens(schedule_id: u64, amount: Option<u128>)"
+  description="Claims available vested tokens from a schedule. If amount is None, claims all available tokens."
+  parameters={[
+    {
+      name: "schedule_id",
+      type: "u64",
+      description: "The ID of the vesting schedule to claim from"
+    },
+    {
+      name: "amount",
+      type: "Option<u128>",
+      description: "Specific amount to claim, or None to claim all available",
+      optional: true
+    }
+  ]}
+  returns={{
+    type: "u128", 
+    description: "The actual amount of tokens claimed"
+  }}
+  errors=[
+    "ScheduleNotFound - No schedule exists with this ID",
+    "NotBeneficiary - Only the beneficiary can claim tokens",
+    "InsufficientVested - Not enough tokens have vested yet",
+    "InvalidAmount - Requested amount exceeds available tokens"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Claim all available tokens
+stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GBENEFICIARY... \\
+  -- claim_tokens \\
+  --schedule_id 1
+
+# Claim specific amount (100,000 tokens)  
+stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GBENEFICIARY... \\
+  -- claim_tokens \\
+  --schedule_id 1 \\
+  --amount 1000000000000`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="revoke_schedule"
+  signature="revoke_schedule(schedule_id: u64)"
+  description="Revokes a vesting schedule, returning unvested tokens to the creator. Only works if the schedule was created as revocable."
+  parameters={[
+    {
+      name: "schedule_id",
+      type: "u64", 
+      description: "The ID of the vesting schedule to revoke"
+    }
+  ]}
+  returns={{
+    type: "u128",
+    description: "The amount of unvested tokens returned to creator"
+  }}
+  errors={[
+    "ScheduleNotFound - No schedule exists with this ID",
+    "NotCreator - Only the schedule creator can revoke it", 
+    "NotRevocable - This schedule was created as non-revocable",
+    "AlreadyRevoked - Schedule has already been revoked"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Revoke a vesting schedule
+stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GCREATOR... \\
+  -- revoke_schedule \\
+  --schedule_id 1
+
+# Returns amount of tokens recovered`}
+    </pre>
+  }
+/>
+
+### Query Functions
+
+<FunctionRef
+  name="get_vesting_schedule"
+  signature="get_vesting_schedule(schedule_id: u64) -> VestingSchedule"
+  description="Returns the complete details of a vesting schedule."
+  parameters={[
+    {
+      name: "schedule_id",
+      type: "u64",
+      description: "The ID of the vesting schedule to query" 
+    }
+  ]}
+  returns={{
+    type: "VestingSchedule",
+    description: "Struct containing all schedule details (creator, beneficiary, amounts, timings, status)"
+  }}
+  errors={[
+    "ScheduleNotFound - No schedule exists with this ID"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GUSER... \\
+  -- get_vesting_schedule \\
+  --schedule_id 1
+
+# Returns VestingSchedule struct`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="calculate_claimable_amount"
+  signature="calculate_claimable_amount(schedule_id: u64) -> u128" 
+  description="Calculates how many tokens are currently claimable from a vesting schedule without actually claiming them."
+  parameters={[
+    {
+      name: "schedule_id",
+      type: "u64",
+      description: "The ID of the vesting schedule to calculate for"
+    }
+  ]}
+  returns={{
+    type: "u128",
+    description: "The amount of tokens currently available to claim"
+  }}
+  errors={[
+    "ScheduleNotFound - No schedule exists with this ID"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Check claimable amount
+stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GUSER... \\
+  -- calculate_claimable_amount \\
+  --schedule_id 1
+
+# Returns: 2500000000000 (250,000 tokens)`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_schedules_for_beneficiary"
+  signature="get_schedules_for_beneficiary(beneficiary: Address) -> Vec<u64>"
+  description="Returns all vesting schedule IDs for a specific beneficiary address."
+  parameters={[
+    {
+      name: "beneficiary",
+      type: "Address",
+      description: "The beneficiary address to query schedules for"
+    }
+  ]}
+  returns={{
+    type: "Vec<u64>",
+    description: "Array of schedule IDs for this beneficiary"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CBBBB... \\
+  --source-account GUSER... \\
+  -- get_schedules_for_beneficiary \\
+  --beneficiary GBENEFICIARY...
+
+# Returns: [1, 3, 7] (schedule IDs)`}
+    </pre>
+  }
+/>
+
+## Events
+
+The vesting contract emits the following events:
+
+### ScheduleCreated Event
+```rust
+ScheduleCreated {
+    schedule_id: u64,
+    creator: Address,
+    beneficiary: Address, 
+    token: Address,
+    total_amount: u128,
+    start_time: u64,
+    cliff_duration: u64,
+    vesting_duration: u64,
+    revocable: bool
+}
+```
+
+### TokensClaimed Event  
+```rust
+TokensClaimed {
+    schedule_id: u64,
+    beneficiary: Address,
+    amount: u128,
+    remaining: u128
+}
+```
+
+### ScheduleRevoked Event
+```rust
+ScheduleRevoked {
+    schedule_id: u64,
+    creator: Address,
+    returned_amount: u128
+}
+```
+
+## Real-World Examples
+
+### Team Member Vesting
+
+Setting up vesting for a team member with 1-year cliff and 4-year total vesting:
+
+```typescript
+// 1,000,000 tokens over 4 years with 1-year cliff
+const totalAmount = "10000000000000" // 1M tokens * 10^7 decimals
+const startTime = Math.floor(Date.now() / 1000) // Current timestamp
+const cliffDuration = 365 * 24 * 60 * 60 // 1 year in seconds  
+const vestingDuration = 4 * 365 * 24 * 60 * 60 // 4 years in seconds
+
+const scheduleId = await contract.call('create_vesting_schedule', {
+  token: TOKEN_ADDRESS,
+  beneficiary: TEAM_MEMBER_ADDRESS,
+  total_amount: totalAmount,
+  start_time: startTime,
+  cliff_duration: cliffDuration, 
+  vesting_duration: vestingDuration,
+  revocable: true // Can revoke if team member leaves
+})
+```
+
+### Advisor Vesting  
+
+Setting up vesting for advisors with no cliff, linear over 2 years:
+
+```typescript
+// 50,000 tokens over 2 years, no cliff
+const advisorAmount = "500000000000" // 50K tokens
+const noCliff = 0
+const twoYears = 2 * 365 * 24 * 60 * 60
+
+await contract.call('create_vesting_schedule', {
+  token: TOKEN_ADDRESS,
+  beneficiary: ADVISOR_ADDRESS, 
+  total_amount: advisorAmount,
+  start_time: startTime,
+  cliff_duration: noCliff,
+  vesting_duration: twoYears,
+  revocable: false // Non-revocable for advisors
+})
+```
+
+### Investor Vesting
+
+Setting up vesting for investors with 6-month cliff, linear over 18 months:
+
+```typescript
+// 5,000,000 tokens with 6-month cliff, 18-month total  
+const investorAmount = "50000000000000" // 5M tokens
+const sixMonthCliff = 6 * 30 * 24 * 60 * 60 // ~6 months
+const eighteenMonths = 18 * 30 * 24 * 60 * 60 // ~18 months
+
+await contract.call('create_vesting_schedule', {
+  token: TOKEN_ADDRESS,
+  beneficiary: INVESTOR_ADDRESS,
+  total_amount: investorAmount, 
+  start_time: startTime,
+  cliff_duration: sixMonthCliff,
+  vesting_duration: eighteenMonths,
+  revocable: false
+})
+```
+
+## Calculating Vesting Progress
+
+### Manual Calculation
+
+You can calculate vesting progress manually using these formulas:
+
+```typescript
+function calculateVestedAmount(schedule: VestingSchedule, currentTime: number): bigint {
+  const { start_time, cliff_duration, vesting_duration, total_amount } = schedule
+  
+  // Before vesting starts
+  if (currentTime < start_time) {
+    return 0n
+  }
+  
+  const elapsed = currentTime - start_time
+  
+  // During cliff period  
+  if (elapsed < cliff_duration) {
+    return 0n
+  }
+  
+  // After vesting completes
+  if (elapsed >= vesting_duration) {
+    return total_amount
+  }
+  
+  // Linear vesting calculation
+  const vestingElapsed = elapsed - cliff_duration
+  const linearDuration = vesting_duration - cliff_duration
+  const vestedAmount = (total_amount * BigInt(vestingElapsed)) / BigInt(linearDuration)
+  
+  return vestedAmount
+}
+
+function calculateClaimableAmount(schedule: VestingSchedule, currentTime: number): bigint {
+  const vestedAmount = calculateVestedAmount(schedule, currentTime)
+  return vestedAmount - schedule.claimed_amount
+}
+```
+
+## Integration Examples
+
+### Complete Vesting Dashboard
+
+```typescript
+import { Contract } from '@stellar/stellar-sdk'
+
+class VestingDashboard {
+  constructor(private contract: Contract) {}
+  
+  // Get all schedules for a user
+  async getUserSchedules(userAddress: string) {
+    const scheduleIds = await this.contract.call(
+      'get_schedules_for_beneficiary',
+      { beneficiary: userAddress }
+    )
+    
+    const schedules = await Promise.all(
+      scheduleIds.map(id => 
+        this.contract.call('get_vesting_schedule', { schedule_id: id })
+      )
+    )
+    
+    return schedules.map(schedule => ({
+      ...schedule,
+      claimable: this.contract.call('calculate_claimable_amount', {
+        schedule_id: schedule.id
+      })
+    }))
+  }
+  
+  // Claim all available tokens across all schedules
+  async claimAllAvailable(userKeypair: Keypair) {
+    const scheduleIds = await this.contract.call(
+      'get_schedules_for_beneficiary', 
+      { beneficiary: userKeypair.publicKey() }
+    )
+    
+    const claims = []
+    
+    for (const scheduleId of scheduleIds) {
+      const claimable = await this.contract.call(
+        'calculate_claimable_amount',
+        { schedule_id: scheduleId }
+      )
+      
+      if (claimable > 0) {
+        const tx = await this.contract.call('claim_tokens', {
+          schedule_id: scheduleId
+        })
+        tx.sign(userKeypair)
+        claims.push(tx)
+      }
+    }
+    
+    return claims
+  }
+}
+```
+
+## Security Considerations
+
+<CalloutBox type="warning" title="Revocable Schedules">
+Revocable vesting schedules give significant power to the creator. Beneficiaries should understand this risk, especially for team members who might be terminated.
+</CalloutBox>
+
+### Best Practices
+
+1. **Use Non-Revocable for External Parties**: Investors and advisors should typically receive non-revocable schedules
+2. **Secure Creator Keys**: The schedule creator can revoke schedules, so protect these private keys
+3. **Verify Schedule Parameters**: Double-check all vesting parameters before creating schedules  
+4. **Test Calculations**: Verify vesting calculations are correct for your specific use case
+5. **Monitor Events**: Set up monitoring for claims and revocations
+
+### Access Control
+
+- **Schedule Creation**: Anyone with tokens and approvals can create schedules
+- **Token Claims**: Only the beneficiary can claim their vested tokens  
+- **Schedule Revocation**: Only the original creator can revoke (if revocable)
+- **Query Functions**: All query functions are public
+
+## Troubleshooting
+
+### Common Issues
+
+**"InsufficientAllowance" Error**
+- The token creator needs to approve the vesting contract to spend tokens
+- Use the token contract's `approve` function before creating vesting schedules
+
+**"InvalidDuration" Error**
+- Ensure vesting duration is greater than cliff duration  
+- Both durations must be greater than 0
+
+**"NotBeneficiary" Error**
+- Only the designated beneficiary can claim tokens from their schedule
+- Verify you're calling from the correct address
+
+**"InsufficientVested" Error**
+- Not enough time has passed for tokens to vest
+- Use `calculate_claimable_amount` to check available tokens
+
+### Common Calculations
+
+**Converting Time Periods to Seconds**
+```typescript
+const SECOND = 1
+const MINUTE = 60 * SECOND
+const HOUR = 60 * MINUTE  
+const DAY = 24 * HOUR
+const WEEK = 7 * DAY
+const MONTH = 30 * DAY // Approximation
+const YEAR = 365 * DAY
+```
+
+**Converting Token Amounts**
+```typescript
+// Convert human-readable amount to stroops (7 decimals)
+function toStroops(humanAmount: string): string {
+  return (parseFloat(humanAmount) * 1e7).toString()
+}
+
+// Convert stroops back to human-readable  
+function fromStroops(stroops: string): string {
+  return (parseInt(stroops) / 1e7).toString()
+}
+```
+
+</div>
