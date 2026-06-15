@@ -1,0 +1,550 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { FunctionRef } from '@/components/FunctionRef'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Token Contract" 
+  description="Complete reference for the Stellar Launchpad token contract"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Contracts', href: '/docs/contracts' },
+    { label: 'Token Contract', href: '/docs/contracts/token' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Token Contract is the core of the Stellar Launchpad ecosystem. It enables anyone to launch a token with built-in features for distribution, trading, and management. The contract follows Stellar's token standards while adding enhanced functionality for token launches.
+
+### Key Features
+
+- **Standard Compliance**: Full compatibility with Stellar token standards
+- **Admin Controls**: Token admins can mint, burn, and freeze tokens
+- **Metadata Management**: On-chain storage of token name, symbol, and description
+- **Launch Integration**: Seamless integration with the Launchpad Registry
+- **Security**: Built-in access controls and validation
+
+### Use Cases
+
+- **Project Tokens**: Launch utility tokens for dApps and protocols
+- **Community Tokens**: Create tokens for DAOs and communities  
+- **Reward Tokens**: Issue tokens for loyalty programs and incentives
+- **Governance Tokens**: Enable decentralized governance with voting tokens
+- **Stablecoins**: Issue asset-backed or algorithmic stablecoins
+
+<CalloutBox type="info" title="Contract Address">
+**<NetworkBadge network="testnet" />** `CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`  
+**<NetworkBadge network="mainnet" />** `C1111111111111111111111111111111111111111111111111111111`
+</CalloutBox>
+
+## Contract Functions
+
+### Core Functions
+
+<FunctionRef
+  name="initialize"
+  signature="initialize(admin: Address, name: String, symbol: String, decimals: u32, total_supply: u128)"
+  description="Initializes a new token with the specified parameters. This function can only be called once per token contract instance."
+  parameters={[
+    {
+      name: "admin",
+      type: "Address",
+      description: "The address that will have admin privileges for this token"
+    },
+    {
+      name: "name", 
+      type: "String",
+      description: "The human-readable name of the token (e.g., 'My Awesome Token')"
+    },
+    {
+      name: "symbol",
+      type: "String", 
+      description: "The short symbol for the token (e.g., 'MAT'). Must be 2-12 characters."
+    },
+    {
+      name: "decimals",
+      type: "u32",
+      description: "Number of decimal places for the token. Stellar typically uses 7 decimals."
+    },
+    {
+      name: "total_supply",
+      type: "u128",
+      description: "The total supply of tokens to mint to the admin address"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "AlreadyInitialized - Token has already been initialized",
+    "InvalidDecimals - Decimals must be between 0 and 18",
+    "InvalidSymbol - Symbol must be 2-12 characters",
+    "InvalidSupply - Total supply must be greater than 0"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Initialize a new token
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- initialize \\
+  --admin GUSER... \\
+  --name "My Awesome Token" \\
+  --symbol "MAT" \\
+  --decimals 7 \\
+  --total_supply 1000000000000`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="transfer"
+  signature="transfer(from: Address, to: Address, amount: u128)"
+  description="Transfers tokens from one address to another. The caller must be authorized to spend tokens from the 'from' address."
+  parameters={[
+    {
+      name: "from",
+      type: "Address", 
+      description: "The address to transfer tokens from"
+    },
+    {
+      name: "to",
+      type: "Address",
+      description: "The address to transfer tokens to"
+    },
+    {
+      name: "amount",
+      type: "u128",
+      description: "The amount of tokens to transfer (in stroops)"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "InsufficientBalance - From address doesn't have enough tokens",
+    "Unauthorized - Caller not authorized to transfer from this address",
+    "Frozen - Token transfers are currently frozen",
+    "InvalidAmount - Amount must be greater than 0"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Transfer 100 tokens (100 * 10^7 stroops)
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- transfer \\
+  --from GUSER... \\
+  --to GRECIEVER... \\
+  --amount 1000000000`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="balance"
+  signature="balance(address: Address) -> u128"
+  description="Returns the token balance for the specified address."
+  parameters={[
+    {
+      name: "address",
+      type: "Address",
+      description: "The address to check the balance for"
+    }
+  ]}
+  returns={{
+    type: "u128",
+    description: "The token balance in stroops (smallest unit)"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Check balance
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- balance \\
+  --address GUSER...
+
+# Output: 1000000000 (100 tokens with 7 decimals)`}
+    </pre>
+  }
+/>
+
+### Admin Functions
+
+<FunctionRef
+  name="mint"
+  signature="mint(to: Address, amount: u128)"
+  description="Mints new tokens and assigns them to the specified address. Can only be called by the token admin."
+  parameters={[
+    {
+      name: "to",
+      type: "Address",
+      description: "The address to mint tokens to"
+    },
+    {
+      name: "amount", 
+      type: "u128",
+      description: "The amount of tokens to mint (in stroops)"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "Unauthorized - Only admin can mint tokens",
+    "InvalidAmount - Amount must be greater than 0",
+    "SupplyOverflow - Would exceed maximum supply limits"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Mint 1000 new tokens to an address
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GADMIN... \\
+  -- mint \\
+  --to GRECIEVER... \\
+  --amount 10000000000`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="burn"
+  signature="burn(from: Address, amount: u128)"
+  description="Burns (destroys) tokens from the specified address. Can only be called by the token admin."
+  parameters={[
+    {
+      name: "from",
+      type: "Address",
+      description: "The address to burn tokens from"
+    },
+    {
+      name: "amount",
+      type: "u128", 
+      description: "The amount of tokens to burn (in stroops)"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "Unauthorized - Only admin can burn tokens",
+    "InsufficientBalance - Address doesn't have enough tokens to burn",
+    "InvalidAmount - Amount must be greater than 0"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Burn 500 tokens from an address
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GADMIN... \\
+  -- burn \\
+  --from GUSER... \\
+  --amount 5000000000`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="set_admin"
+  signature="set_admin(new_admin: Address)"
+  description="Transfers admin privileges to a new address. Can only be called by the current admin."
+  parameters={[
+    {
+      name: "new_admin",
+      type: "Address",
+      description: "The address that will become the new admin"
+    }
+  ]}
+  returns={{
+    type: "void", 
+    description: "No return value on success"
+  }}
+  errors={[
+    "Unauthorized - Only current admin can transfer admin privileges"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`// Transfer admin to new address
+stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GCURRENTADMIN... \\
+  -- set_admin \\
+  --new_admin GNEWADMIN...`}
+    </pre>
+  }
+/>
+
+### Information Functions
+
+<FunctionRef
+  name="name"
+  signature="name() -> String"
+  description="Returns the human-readable name of the token."
+  parameters={[]}
+  returns={{
+    type: "String",
+    description: "The token name (e.g., 'My Awesome Token')"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- name
+
+# Output: "My Awesome Token"`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="symbol"
+  signature="symbol() -> String"
+  description="Returns the symbol of the token."
+  parameters={[]}
+  returns={{
+    type: "String",
+    description: "The token symbol (e.g., 'MAT')"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- symbol
+
+# Output: "MAT"`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="decimals"
+  signature="decimals() -> u32"
+  description="Returns the number of decimal places used by the token."
+  parameters={[]}
+  returns={{
+    type: "u32",
+    description: "The number of decimal places (typically 7 for Stellar tokens)"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- decimals
+
+# Output: 7`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="total_supply"
+  signature="total_supply() -> u128"
+  description="Returns the total supply of tokens in circulation."
+  parameters={[]}
+  returns={{
+    type: "u128",
+    description: "The total supply in stroops"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CAAAA... \\
+  --source-account GUSER... \\
+  -- total_supply
+
+# Output: 1000000000000 (1M tokens with 7 decimals)`}
+    </pre>
+  }
+/>
+
+## Events
+
+The token contract emits the following events for tracking and integration:
+
+### Transfer Event
+```rust
+Transfer {
+    from: Address,
+    to: Address, 
+    amount: u128
+}
+```
+Emitted when tokens are transferred between addresses.
+
+### Mint Event  
+```rust
+Mint {
+    to: Address,
+    amount: u128
+}
+```
+Emitted when new tokens are minted.
+
+### Burn Event
+```rust
+Burn {
+    from: Address,
+    amount: u128  
+}
+```
+Emitted when tokens are burned.
+
+### AdminChanged Event
+```rust
+AdminChanged {
+    old_admin: Address,
+    new_admin: Address
+}
+```
+Emitted when admin privileges are transferred.
+
+## Security Considerations
+
+<CalloutBox type="warning" title="Admin Privileges">
+The token admin has significant control including minting and burning tokens. Choose admin addresses carefully and consider using multi-sig wallets for production tokens.
+</CalloutBox>
+
+### Access Control
+
+- **Admin Only**: `mint`, `burn`, `set_admin`
+- **Authorized Users**: `transfer` (must be approved or own the tokens)
+- **Public**: All read functions (`balance`, `name`, `symbol`, etc.)
+
+### Best Practices
+
+1. **Use Multi-Sig Admins**: For production tokens, use multi-signature wallets as admins
+2. **Test Thoroughly**: Always test token operations on testnet first
+3. **Validate Recipients**: Ensure transfer recipients are valid Stellar addresses
+4. **Monitor Events**: Set up monitoring for mint/burn events to track supply changes
+5. **Secure Key Management**: Keep admin private keys secure and backed up
+
+### Known Limitations
+
+- **No Pausability**: Once deployed, token transfers cannot be globally paused
+- **Irreversible Burns**: Burned tokens cannot be recovered
+- **Single Admin**: Only one admin address is supported (use multi-sig for shared control)
+- **Fixed Decimals**: The number of decimals cannot be changed after deployment
+
+## Integration Examples
+
+### TypeScript Integration
+
+```typescript
+import { Contract, SorobanRpc, Keypair } from '@stellar/stellar-sdk'
+
+// Connect to token contract
+const contract = new Contract(TOKEN_CONTRACT_ADDRESS)
+const server = new SorobanRpc.Server(RPC_URL)
+
+// Check token balance
+async function getBalance(userAddress: string): Promise<string> {
+  const result = await contract.call(
+    'balance',
+    { address: userAddress }
+  )
+  return result.toString()
+}
+
+// Transfer tokens
+async function transferTokens(
+  fromKeypair: Keypair,
+  toAddress: string, 
+  amount: string
+): Promise<string> {
+  const tx = await contract.call(
+    'transfer',
+    {
+      from: fromKeypair.publicKey(),
+      to: toAddress,
+      amount: amount
+    }
+  )
+  
+  tx.sign(fromKeypair)
+  const result = await server.sendTransaction(tx)
+  return result.hash
+}
+```
+
+### Python Integration
+
+```python
+from stellar_sdk import Keypair, Server, TransactionBuilder
+from stellar_sdk.contract import Contract
+
+# Initialize contract
+contract = Contract(TOKEN_CONTRACT_ADDRESS)
+server = Server("https://soroban-testnet.stellar.org")
+
+# Get token info
+def get_token_info():
+    name = contract.functions.name().call()
+    symbol = contract.functions.symbol().call()
+    decimals = contract.functions.decimals().call()
+    total_supply = contract.functions.total_supply().call()
+    
+    return {
+        'name': name,
+        'symbol': symbol, 
+        'decimals': decimals,
+        'total_supply': total_supply
+    }
+
+# Mint tokens (admin only)
+def mint_tokens(admin_keypair, to_address, amount):
+    tx = contract.functions.mint(to_address, amount).build_transaction(
+        source_account=admin_keypair.public_key,
+        network_passphrase="Test SDF Network ; September 2015",
+        base_fee=100
+    )
+    
+    tx.sign(admin_keypair)
+    response = server.submit_transaction(tx)
+    return response['hash']
+```
+
+## Troubleshooting
+
+### Common Errors
+
+**"Unauthorized" Error**
+- Ensure you're calling admin functions from the admin address
+- Check that you have permission to transfer tokens from the source address
+
+**"InsufficientBalance" Error**  
+- Verify the source address has enough tokens for the transfer
+- Remember amounts are in stroops (multiply by 10^decimals)
+
+**"InvalidAmount" Error**
+- Ensure amounts are greater than 0
+- Check for integer overflow with very large amounts
+
+**"AlreadyInitialized" Error**
+- The token contract has already been initialized
+- Deploy a fresh contract instance for a new token
+
+### Getting Help
+
+- Review the [Integration Guide](/docs/integration) for detailed examples
+- Check the [Security Guide](/docs/security) for best practices  
+- Join the Stellar Discord for community support
+- Report issues on the GitHub repository
+
+</div>

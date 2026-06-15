@@ -1,0 +1,203 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Getting Started" 
+  description="Launch your first token on Stellar in 5 minutes"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Getting Started', href: '/docs/getting-started' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## What is Stellar Launchpad?
+
+Stellar Launchpad is a comprehensive ecosystem for launching and managing tokens on the Stellar network. It consists of four smart contracts that work together to provide a complete token lifecycle management solution:
+
+- **Token Contract**: Issue and manage your token with built-in features
+- **Vesting Contract**: Create time-locked token distribution schedules for teams and investors
+- **Airdrop Contract**: Distribute tokens to communities with flexible distribution models
+- **Launchpad Registry**: Track and discover all launches on the network
+
+The ecosystem also includes a web dashboard for non-technical users and a CLI for developers who prefer command-line interfaces.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed and configured:
+
+### 1. Freighter Wallet
+
+Freighter is the most popular Stellar wallet and browser extension.
+
+1. Install the [Freighter browser extension](https://www.freighter.app/)
+2. Create a new wallet or import an existing one
+3. Fund your wallet with XLM for transaction fees
+
+<CalloutBox type="info" title="Testnet XLM">
+Get free testnet XLM from the [Stellar Laboratory Friendbot](https://laboratory.stellar.org/#account-creator?network=test) for testing.
+</CalloutBox>
+
+### 2. Stellar CLI
+
+The Stellar CLI is required for interacting with smart contracts.
+
+```bash
+# Install Stellar CLI
+curl -sSL https://stellar.org/cli/install.sh | bash
+
+# Verify installation
+stellar --version
+```
+
+### 3. Rust (for contract development)
+
+If you plan to modify or build contracts from source:
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install the wasm32 target
+rustup target add wasm32-unknown-unknown
+
+# Install Stellar contract tooling
+cargo install --locked stellar-cli --features opt
+```
+
+## Network Guide: Testnet vs Mainnet
+
+Stellar Launchpad is deployed on both Stellar Testnet and Mainnet.
+
+### <NetworkBadge network="testnet" /> Testnet
+
+Use testnet for development and testing:
+
+- **Free**: Testnet XLM is free from Friendbot
+- **Safe**: No real money at risk
+- **Reset**: Testnet resets periodically
+- **Network ID**: `Test SDF Network ; September 2015`
+
+### <NetworkBadge network="mainnet" /> Mainnet
+
+Use mainnet for production deployments:
+
+- **Real money**: Requires real XLM for fees
+- **Permanent**: Transactions are permanent
+- **Network ID**: `Public Global Stellar Network ; September 2015`
+
+<CalloutBox type="warning" title="Always Test First">
+Always test your token launches on testnet before deploying to mainnet. Once on mainnet, actions are permanent and irreversible.
+</CalloutBox>
+
+## Deployed Contract Addresses
+
+The Stellar Launchpad contracts are deployed at the following addresses:
+
+### <NetworkBadge network="testnet" /> Testnet Addresses
+
+```
+Token Contract:     CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Vesting Contract:   CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+Airdrop Contract:   CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+Launchpad Registry: CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+```
+
+### <NetworkBadge network="mainnet" /> Mainnet Addresses
+
+```
+Token Contract:     C1111111111111111111111111111111111111111111111111111111
+Vesting Contract:   C2222222222222222222222222222222222222222222222222222222
+Airdrop Contract:   C3333333333333333333333333333333333333333333333333333333
+Launchpad Registry: C4444444444444444444444444444444444444444444444444444444
+```
+
+<CalloutBox type="info" title="Contract Updates">
+These addresses are updated when new versions of the contracts are deployed. Always verify the latest addresses in the official documentation.
+</CalloutBox>
+
+## Quickstart: Launch Your First Token
+
+Let's launch your first token in 5 minutes using the web dashboard:
+
+### Step 1: Connect Your Wallet
+
+1. Open the [Stellar Launchpad Web App](https://launchpad.stellar.org)
+2. Click "Connect Wallet" in the top right
+3. Select Freighter and approve the connection
+4. Switch to testnet in Freighter for testing
+
+### Step 2: Launch Your Token
+
+1. Click the "Launch Token" button on the dashboard
+2. Fill in your token details:
+   ```
+   Token Name: My Awesome Token
+   Symbol: MAT
+   Total Supply: 1,000,000
+   Decimals: 7
+   Description: A token for testing the Stellar Launchpad
+   ```
+3. Review the transaction details
+4. Click "Launch Token" and confirm in Freighter
+5. Wait for the transaction to confirm (usually 5-10 seconds)
+
+### Step 3: Verify Your Launch
+
+After the transaction confirms:
+
+1. Your token will appear on the "My Launches" page
+2. You'll receive the total supply in your wallet
+3. The launch will be visible on the "Explore" page
+4. You can view the transaction on StellarExpert
+
+<CalloutBox type="success" title="Congratulations!">
+You've successfully launched your first token on Stellar! Your token is now live and tradeable.
+</CalloutBox>
+
+## What's Next?
+
+Now that you've launched your first token, explore these advanced features:
+
+- **[Token Contract Reference](/docs/contracts/token)**: Learn about all available token functions
+- **[Create a Vesting Schedule](/docs/contracts/vesting)**: Set up team token vesting
+- **[Run an Airdrop](/docs/contracts/airdrop)**: Distribute tokens to your community
+- **[CLI Usage](/docs/cli)**: Use command-line tools for advanced operations
+- **[Integration Guide](/docs/integration)**: Integrate launchpad contracts into your project
+
+## Common Issues
+
+### "Insufficient Balance" Error
+
+This error occurs when you don't have enough XLM to pay transaction fees.
+
+**Solution**: Fund your wallet with at least 1 XLM for testnet operations.
+
+### Transaction Timeout
+
+If transactions are taking too long or timing out:
+
+**Solution**: Check the Stellar network status and try again. Testnet can be slower than mainnet.
+
+### Freighter Not Connecting
+
+If Freighter isn't connecting properly:
+
+**Solution**: 
+1. Refresh the page
+2. Ensure Freighter is unlocked
+3. Try disconnecting and reconnecting
+4. Check that you're on the correct network (testnet vs mainnet)
+
+## Getting Help
+
+If you run into issues:
+
+- Check the [Security Guide](/docs/security) for best practices
+- Review the [Integration Guide](/docs/integration) for technical details
+- Join the Stellar Discord for community support
+- Report bugs on the GitHub repository
+
+</div>
