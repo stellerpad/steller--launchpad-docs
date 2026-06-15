@@ -1,0 +1,698 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="CLI Reference" 
+  description="Command-line interface for interacting with Stellar Launchpad contracts"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'CLI Reference', href: '/docs/cli' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Stellar Launchpad CLI provides a powerful command-line interface for interacting with all launchpad contracts. It's built on top of the Stellar CLI and provides convenient commands for launching tokens, managing vesting schedules, running airdrops, and querying the registry.
+
+### Key Features
+
+- **Token Operations**: Launch, mint, burn, and transfer tokens
+- **Vesting Management**: Create and manage vesting schedules
+- **Airdrop Execution**: Run equal, weighted, and claimable airdrops
+- **Registry Queries**: Browse and search launched tokens
+- **Network Support**: Works on both testnet and mainnet
+- **Configuration Management**: Save frequently used settings
+
+## Installation
+
+### Prerequisites
+
+First, ensure you have the Stellar CLI installed:
+
+```bash
+# Install Stellar CLI
+curl -sSL https://stellar.org/cli/install.sh | bash
+
+# Verify installation
+stellar --version
+```
+
+### Install Launchpad CLI
+
+```bash
+# Install via npm
+npm install -g @stellar/launchpad-cli
+
+# Or install via cargo
+cargo install stellar-launchpad-cli
+
+# Verify installation
+stellar-launchpad --version
+```
+
+<CalloutBox type="info" title="Alias Setup">
+For convenience, you can set up an alias: `alias slp='stellar-launchpad'`
+</CalloutBox>
+
+## Configuration
+
+### Initial Setup
+
+Configure the CLI for your preferred network and account:
+
+```bash
+# Initialize configuration
+stellar-launchpad config init
+
+# Set default network (testnet or mainnet)
+stellar-launchpad config set-network testnet
+
+# Set default source account
+stellar-launchpad config set-account GCREATOR...
+
+# View current configuration
+stellar-launchpad config show
+```
+
+### Configuration File
+
+The CLI stores configuration in `~/.stellar-launchpad/config.toml`:
+
+```toml
+[network]
+default = "testnet"
+rpc_url = "https://soroban-testnet.stellar.org"
+network_passphrase = "Test SDF Network ; September 2015"
+
+[accounts]
+default = "GCREATOR..."
+
+[contracts]
+token = "CAAAA..."
+vesting = "CBBBB..."
+airdrop = "CCCCC..."
+registry = "CDDDD..."
+
+[settings]
+default_decimals = 7
+default_batch_size = 100
+confirmation_required = true
+```
+
+### Network Switching
+
+```bash
+# Switch to mainnet
+stellar-launchpad config set-network mainnet
+
+# Switch to testnet  
+stellar-launchpad config set-network testnet
+
+# Use custom network
+stellar-launchpad config set-network custom \
+  --rpc-url "https://custom-stellar-node.com" \
+  --network-passphrase "Custom Network"
+```
+
+## Token Commands
+
+### Launch Token
+
+```bash
+# Basic token launch
+stellar-launchpad token launch \
+  --name "My Awesome Token" \
+  --symbol "MAT" \
+  --supply 1000000 \
+  --decimals 7 \
+  --description "A token for testing"
+
+# Launch with metadata
+stellar-launchpad token launch \
+  --name "DeFi Protocol Token" \
+  --symbol "DPT" \
+  --supply 10000000 \
+  --decimals 7 \
+  --description "Utility token for our DeFi protocol" \
+  --website "https://mydefi.com" \
+  --logo "https://mydefi.com/logo.png" \
+  --category "defi" \
+  --social-links "https://twitter.com/mydefi,https://discord.gg/mydefi"
+
+# Launch with custom source account
+stellar-launchpad token launch \
+  --name "Team Token" \
+  --symbol "TEAM" \
+  --supply 1000000 \
+  --source-account GCREATOR... \
+  --network testnet
+```
+
+### Token Management
+
+```bash
+# Get token information
+stellar-launchpad token info --address CTOKEN...
+
+# Check token balance
+stellar-launchpad token balance \
+  --token CTOKEN... \
+  --address GUSER...
+
+# Transfer tokens
+stellar-launchpad token transfer \
+  --token CTOKEN... \
+  --to GRECIPIENT... \
+  --amount 1000 \
+  --source-account GSENDER...
+
+# Mint additional tokens (admin only)
+stellar-launchpad token mint \
+  --token CTOKEN... \
+  --to GRECIPIENT... \
+  --amount 5000 \
+  --source-account GADMIN...
+
+# Burn tokens (admin only)
+stellar-launchpad token burn \
+  --token CTOKEN... \
+  --from GUSER... \
+  --amount 1000 \
+  --source-account GADMIN...
+```
+
+## Vesting Commands
+
+### Create Vesting Schedules
+
+```bash
+# Linear vesting (no cliff)
+stellar-launchpad vesting create \
+  --token CTOKEN... \
+  --beneficiary GTEAMMEMBER... \
+  --amount 100000 \
+  --duration "4 years" \
+  --revocable
+
+# Cliff vesting  
+stellar-launchpad vesting create \
+  --token CTOKEN... \
+  --beneficiary GADVISOR... \
+  --amount 50000 \
+  --cliff "1 year" \
+  --duration "1 year" \
+  --description "Advisor tokens"
+
+# Hybrid vesting (cliff + linear)
+stellar-launchpad vesting create \
+  --token CTOKEN... \
+  --beneficiary GINVESTOR... \
+  --amount 1000000 \
+  --cliff "6 months" \
+  --duration "2 years" \
+  --revocable \
+  --start-time "2024-01-01T00:00:00Z"
+```
+
+### Vesting Management
+
+```bash
+# List vesting schedules for beneficiary
+stellar-launchpad vesting list --beneficiary GUSER...
+
+# Get vesting schedule details
+stellar-launchpad vesting info --schedule-id 1
+
+# Check claimable amount
+stellar-launchpad vesting claimable --schedule-id 1
+
+# Claim vested tokens
+stellar-launchpad vesting claim \
+  --schedule-id 1 \
+  --source-account GBENEFICIARY...
+
+# Claim specific amount
+stellar-launchpad vesting claim \
+  --schedule-id 1 \
+  --amount 10000 \
+  --source-account GBENEFICIARY...
+
+# Revoke vesting schedule (creator only)
+stellar-launchpad vesting revoke \
+  --schedule-id 1 \
+  --source-account GCREATOR...
+```
+
+### Batch Vesting Operations
+
+```bash
+# Create multiple vesting schedules from CSV
+stellar-launchpad vesting create-batch \
+  --csv team-vesting.csv \
+  --token CTOKEN... \
+  --cliff "1 year" \
+  --duration "4 years" \
+  --revocable
+
+# CSV format: beneficiary,amount,description
+# GTEAMMEMBER1...,100000,Lead Developer
+# GTEAMMEMBER2...,75000,Marketing Manager
+# GTEAMMEMBER3...,50000,Community Manager
+```
+
+## Airdrop Commands
+
+### Equal Distribution Airdrops
+
+```bash
+# Equal airdrop from address list
+stellar-launchpad airdrop equal \
+  --token CTOKEN... \
+  --recipients "GUSER1...,GUSER2...,GUSER3..." \
+  --amount-each 100 \
+  --execute-now
+
+# Equal airdrop from CSV file
+stellar-launchpad airdrop equal \
+  --token CTOKEN... \
+  --csv recipients.csv \
+  --amount-each 100 \
+  --description "Community airdrop"
+
+# CSV format: address
+# GUSER1...
+# GUSER2...
+# GUSER3...
+```
+
+### Weighted Distribution Airdrops
+
+```bash
+# Weighted airdrop with custom weights
+stellar-launchpad airdrop weighted \
+  --token CTOKEN... \
+  --total-amount 100000 \
+  --recipients "GUSER1...:100,GUSER2...:75,GUSER3...:50" \
+  --execute-now
+
+# Weighted airdrop from CSV
+stellar-launchpad airdrop weighted \
+  --token CTOKEN... \
+  --csv weighted-recipients.csv \
+  --total-amount 100000
+
+# CSV format: address,weight
+# GUSER1...,100
+# GUSER2...,75  
+# GUSER3...,50
+```
+
+### Claimable Airdrops
+
+```bash
+# Create claimable airdrop
+stellar-launchpad airdrop claimable \
+  --token CTOKEN... \
+  --csv recipients-with-amounts.csv \
+  --deadline "90 days" \
+  --description "Community claim airdrop"
+
+# Generate claim proofs for recipients
+stellar-launchpad airdrop generate-proofs \
+  --airdrop-id 1 \
+  --output-dir ./proofs/
+
+# Claim from claimable airdrop
+stellar-launchpad airdrop claim \
+  --airdrop-id 1 \
+  --proof-file ./proofs/GRECIPIENT....json \
+  --source-account GRECIPIENT...
+
+# CSV format: address,amount
+# GRECIPIENT1...,1000
+# GRECIPIENT2...,500
+# GRECIPIENT3...,250
+```
+
+### Airdrop Management
+
+```bash
+# List airdrops by creator
+stellar-launchpad airdrop list --creator GCREATOR...
+
+# Get airdrop information
+stellar-launchpad airdrop info --airdrop-id 1
+
+# Execute prepared airdrop in batches
+stellar-launchpad airdrop execute \
+  --airdrop-id 1 \
+  --batch-size 100
+
+# Check claim status
+stellar-launchpad airdrop check-claim \
+  --airdrop-id 1 \
+  --recipient GUSER...
+```
+
+## Registry Commands
+
+### Query Launches
+
+```bash
+# List recent launches
+stellar-launchpad registry list --limit 20
+
+# List launches by category
+stellar-launchpad registry list \
+  --category "defi" \
+  --limit 10
+
+# List verified launches only
+stellar-launchpad registry list \
+  --verified-only \
+  --limit 15
+
+# Get specific launch details
+stellar-launchpad registry info --launch-id 42
+
+# Get launch by token address
+stellar-launchpad registry info --token CTOKEN...
+
+# List launches by creator
+stellar-launchpad registry list \
+  --creator GCREATOR... \
+  --limit 10
+```
+
+### Search and Filter
+
+```bash
+# Search launches by name or symbol
+stellar-launchpad registry search "DeFi"
+
+# Advanced filtering
+stellar-launchpad registry list \
+  --category "gaming" \
+  --verified-only \
+  --min-supply 1000000 \
+  --launched-after "2024-01-01"
+
+# Get registry statistics
+stellar-launchpad registry stats
+
+# Get category breakdown
+stellar-launchpad registry categories
+```
+
+### Registry Management
+
+```bash
+# Register a token (usually automatic)
+stellar-launchpad registry register \
+  --token CTOKEN... \
+  --description "My awesome DeFi token" \
+  --category "defi" \
+  --website "https://myproject.com"
+
+# Update launch metadata (creator only)
+stellar-launchpad registry update \
+  --launch-id 42 \
+  --description "Updated description" \
+  --website "https://newdomain.com"
+```
+
+## Utility Commands
+
+### Account Management
+
+```bash
+# Generate new keypair
+stellar-launchpad account generate
+
+# Get account information
+stellar-launchpad account info GACCOUNT...
+
+# Fund account on testnet
+stellar-launchpad account fund GACCOUNT... --network testnet
+
+# Check XLM balance
+stellar-launchpad account balance GACCOUNT...
+```
+
+### Transaction Management
+
+```bash
+# Get transaction details
+stellar-launchpad tx info HASH...
+
+# Wait for transaction confirmation
+stellar-launchpad tx wait HASH...
+
+# Estimate transaction fees
+stellar-launchpad tx estimate-fee \
+  --operations "token_transfer,vesting_create"
+
+# Submit pre-built transaction
+stellar-launchpad tx submit transaction.xdr
+```
+
+### Data Export
+
+```bash
+# Export launch data to CSV
+stellar-launchpad export launches \
+  --output launches.csv \
+  --format csv \
+  --category "defi"
+
+# Export vesting schedules
+stellar-launchpad export vesting \
+  --beneficiary GUSER... \
+  --output vesting.json
+
+# Export airdrop recipients
+stellar-launchpad export airdrop \
+  --airdrop-id 1 \
+  --output recipients.csv
+```
+
+## Advanced Usage
+
+### Batch Operations
+
+```bash
+# Process multiple operations from config file
+stellar-launchpad batch execute batch-config.yaml
+
+# batch-config.yaml example:
+operations:
+  - type: "token_launch"
+    name: "Token A"
+    symbol: "TOKA"
+    supply: 1000000
+  - type: "vesting_create"
+    beneficiary: "GTEAM..."
+    amount: 100000
+    duration: "4 years"
+  - type: "airdrop_equal"
+    recipients: "./recipients.csv"
+    amount_each: 100
+```
+
+### Scripting and Automation
+
+```bash
+# Use in scripts with JSON output
+stellar-launchpad token info CTOKEN... --output json | jq '.total_supply'
+
+# Silent mode for automation
+stellar-launchpad vesting claim --schedule-id 1 --quiet
+
+# Dry run mode (simulate without executing)
+stellar-launchpad airdrop equal \
+  --recipients "GUSER1...,GUSER2..." \
+  --amount-each 100 \
+  --dry-run
+
+# Watch mode for monitoring
+stellar-launchpad registry list --watch --category "defi"
+```
+
+### Configuration Templates
+
+```bash
+# Save operation as template
+stellar-launchpad template save token-launch \
+  --name "Standard Token Launch" \
+  --supply 1000000 \
+  --decimals 7
+
+# Use saved template
+stellar-launchpad template use token-launch \
+  --name "My New Token" \
+  --symbol "MNT"
+
+# List saved templates
+stellar-launchpad template list
+```
+
+## Global Flags
+
+### Common Options
+
+```bash
+# Network selection
+--network testnet|mainnet|custom
+
+# Account specification  
+--source-account GACCOUNT...
+
+# Output formatting
+--output json|yaml|table|csv
+
+# Confirmation settings
+--yes              # Skip confirmations
+--dry-run          # Simulate only
+--quiet            # Suppress output
+--verbose          # Detailed logging
+
+# Fee settings
+--fee 1000         # Custom fee in stroops
+--max-fee 10000    # Maximum acceptable fee
+```
+
+### Environment Variables
+
+```bash
+# Set default network
+export STELLAR_LAUNCHPAD_NETWORK=testnet
+
+# Set default source account
+export STELLAR_LAUNCHPAD_ACCOUNT=GCREATOR...
+
+# Set custom RPC endpoint
+export STELLAR_LAUNCHPAD_RPC_URL=https://custom-node.com
+
+# Enable debug logging
+export STELLAR_LAUNCHPAD_DEBUG=true
+```
+
+## Error Handling and Troubleshooting
+
+### Common Issues
+
+**"Insufficient Balance" Errors**
+
+```bash
+# Check account balance
+stellar-launchpad account balance GACCOUNT...
+
+# Fund testnet account
+stellar-launchpad account fund GACCOUNT... --network testnet
+```
+
+**"Transaction Failed" Errors**
+
+```bash
+# Get detailed transaction information
+stellar-launchpad tx info HASH... --verbose
+
+# Check network status
+stellar-launchpad network status
+
+# Retry with higher fee
+stellar-launchpad token transfer \
+  --token CTOKEN... \
+  --to GRECIEVER... \
+  --amount 100 \
+  --fee 2000
+```
+
+**Configuration Issues**
+
+```bash
+# Reset configuration to defaults
+stellar-launchpad config reset
+
+# Validate current configuration
+stellar-launchpad config validate
+
+# Show debug information
+stellar-launchpad config debug
+```
+
+### Debug Mode
+
+```bash
+# Enable verbose logging
+stellar-launchpad --verbose token launch --name "Debug Token"
+
+# Save debug logs to file
+stellar-launchpad --log-file debug.log token info CTOKEN...
+
+# Check CLI version and dependencies
+stellar-launchpad version --full
+```
+
+## Integration Examples
+
+### CI/CD Pipeline Integration
+
+```yaml
+# GitHub Actions example
+name: Deploy Token
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Stellar Launchpad CLI
+        run: npm install -g @stellar/launchpad-cli
+      
+      - name: Configure CLI
+        run: |
+          stellar-launchpad config set-network mainnet
+          stellar-launchpad config set-account ${{ secrets.CREATOR_SECRET }}
+      
+      - name: Launch Token
+        run: |
+          stellar-launchpad token launch \
+            --name "${{ env.TOKEN_NAME }}" \
+            --symbol "${{ env.TOKEN_SYMBOL }}" \
+            --supply ${{ env.TOKEN_SUPPLY }} \
+            --description "${{ env.TOKEN_DESCRIPTION }}"
+```
+
+### Monitoring Script
+
+```bash
+#!/bin/bash
+# monitor-launches.sh
+
+# Monitor new launches and send notifications
+stellar-launchpad registry list --limit 1 --output json > latest.json
+
+if [ -f "previous.json" ]; then
+  if ! cmp -s latest.json previous.json; then
+    echo "New launch detected!"
+    stellar-launchpad registry info --launch-id $(jq -r '.[0].launch_id' latest.json)
+    # Send notification (Slack, Discord, etc.)
+  fi
+fi
+
+mv latest.json previous.json
+```
+
+<CalloutBox type="success" title="CLI Mastery">
+The CLI is powerful for automation and batch operations. Combine commands with shell scripts and CI/CD pipelines for advanced workflows.
+</CalloutBox>
+
+</div>

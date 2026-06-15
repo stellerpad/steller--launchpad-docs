@@ -1,0 +1,846 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { FunctionRef } from '@/components/FunctionRef'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Launchpad Registry" 
+  description="Track and discover all token launches on the Stellar Launchpad ecosystem"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Contracts', href: '/docs/contracts' },
+    { label: 'Launchpad Registry', href: '/docs/contracts/launchpad' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Launchpad Registry serves as the central registry for all token launches within the Stellar Launchpad ecosystem. It provides a standardized way to track, discover, and verify launched tokens, enabling the creation of launch explorers, analytics dashboards, and integration tools.
+
+### Key Features
+
+- **Launch Registration**: Automatic registration of all token launches
+- **Metadata Storage**: On-chain storage of launch details and metadata
+- **Launch Discovery**: Query functions to browse and filter launches
+- **Verification System**: Verify legitimate launches vs unofficial tokens
+- **Analytics Support**: Data structure optimized for analytics and reporting
+- **Category System**: Organize launches by type and purpose
+
+### Use Cases
+
+- **Launch Explorers**: Build websites to browse all token launches
+- **Analytics Dashboards**: Track launch metrics and ecosystem growth  
+- **Integration Tools**: Automatically discover new tokens for DEX listings
+- **Verification Services**: Verify tokens launched through official contracts
+- **Portfolio Trackers**: Track user's launched tokens across the ecosystem
+
+<CalloutBox type="info" title="Contract Address">
+**<NetworkBadge network="testnet" />** `CDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD`  
+**<NetworkBadge network="mainnet" />** `C4444444444444444444444444444444444444444444444444444444`
+</CalloutBox>
+
+## Registry Data Structure
+
+### Launch Record Schema
+
+Each registered launch contains the following information:
+
+```rust
+pub struct LaunchRecord {
+    pub launch_id: u64,           // Unique sequential ID
+    pub token_address: Address,    // The deployed token contract  
+    pub creator: Address,          // Who launched the token
+    pub name: String,             // Token name
+    pub symbol: String,           // Token symbol  
+    pub total_supply: u128,       // Initial total supply
+    pub decimals: u32,            // Token decimals
+    pub description: String,      // Launch description
+    pub category: String,         // Token category/type
+    pub launch_time: u64,         // Timestamp of launch
+    pub website: Option<String>,  // Optional website URL
+    pub logo_url: Option<String>, // Optional logo image URL
+    pub social_links: Vec<String>, // Social media links
+    pub verified: bool,           // Verification status
+}
+```
+
+### Categories
+
+The registry supports the following launch categories:
+
+- **`utility`**: Utility tokens for dApps and protocols
+- **`governance`**: Governance tokens for DAOs
+- **`defi`**: DeFi protocol tokens  
+- **`gaming`**: Gaming and metaverse tokens
+- **`nft`**: NFT collection tokens
+- **`community`**: Community and social tokens
+- **`meme`**: Meme tokens  
+- **`stablecoin`**: Stablecoins and pegged assets
+- **`other`**: Miscellaneous or experimental tokens
+
+## Contract Functions
+
+### Registration Functions
+
+<FunctionRef
+  name="register_launch"
+  signature="register_launch(token_address: Address, metadata: LaunchMetadata)"
+  description="Registers a new token launch in the registry. Typically called automatically by the token contract during initialization."
+  parameters={[
+    {
+      name: "token_address",
+      type: "Address", 
+      description: "The address of the deployed token contract"
+    },
+    {
+      name: "metadata",
+      type: "LaunchMetadata",
+      description: "Metadata about the launch including description, category, links, etc."
+    }
+  ]}
+  returns={{
+    type: "u64",
+    description: "The unique launch ID assigned to this registration"
+  }}
+  errors={[
+    "AlreadyRegistered - This token address is already registered",
+    "InvalidMetadata - Metadata validation failed", 
+    "InvalidTokenAddress - Token address is not a valid contract"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Register a token launch
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GCREATOR... \\
+  -- register_launch \\
+  --token_address CTOKEN... \\
+  --metadata '{
+    "description": "A utility token for our DeFi protocol",
+    "category": "defi", 
+    "website": "https://myproject.com",
+    "logo_url": "https://myproject.com/logo.png",
+    "social_links": [
+      "https://twitter.com/myproject",
+      "https://discord.gg/myproject"
+    ]
+  }'
+
+# Returns: launch_id = 42`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="update_launch_metadata"
+  signature="update_launch_metadata(launch_id: u64, metadata: LaunchMetadata)"
+  description="Updates the metadata for an existing launch. Can only be called by the original creator."
+  parameters={[
+    {
+      name: "launch_id",
+      type: "u64",
+      description: "The ID of the launch to update"
+    },
+    {
+      name: "metadata",
+      type: "LaunchMetadata", 
+      description: "Updated metadata for the launch"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "LaunchNotFound - No launch exists with this ID",
+    "NotCreator - Only the launch creator can update metadata",
+    "InvalidMetadata - Metadata validation failed"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Update launch metadata  
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GCREATOR... \\
+  -- update_launch_metadata \\
+  --launch_id 42 \\
+  --metadata '{
+    "description": "Updated: A revolutionary DeFi protocol token",
+    "category": "defi",
+    "website": "https://mynewdomain.com",
+    "logo_url": "https://mynewdomain.com/new_logo.png", 
+    "social_links": [
+      "https://twitter.com/myproject",
+      "https://discord.gg/myproject",
+      "https://t.me/myproject"
+    ]
+  }'`}
+    </pre>
+  }
+/>
+
+### Verification Functions
+
+<FunctionRef
+  name="verify_launch"
+  signature="verify_launch(launch_id: u64, verified: bool)"
+  description="Sets the verification status for a launch. Can only be called by authorized verifiers."
+  parameters={[
+    {
+      name: "launch_id",
+      type: "u64",
+      description: "The ID of the launch to verify or unverify"
+    },
+    {
+      name: "verified",
+      type: "bool",
+      description: "True to mark as verified, false to remove verification"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on success"
+  }}
+  errors={[
+    "LaunchNotFound - No launch exists with this ID", 
+    "NotAuthorized - Only authorized verifiers can change verification status"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Verify a launch (admin only)
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GADMIN... \\
+  -- verify_launch \\
+  --launch_id 42 \\
+  --verified true`}
+    </pre>
+  }
+/>
+
+### Query Functions
+
+<FunctionRef
+  name="get_launch"
+  signature="get_launch(launch_id: u64) -> LaunchRecord"
+  description="Returns the complete launch record for a specific launch ID."
+  parameters={[
+    {
+      name: "launch_id",
+      type: "u64",
+      description: "The ID of the launch to retrieve"
+    }
+  ]}
+  returns={{
+    type: "LaunchRecord",
+    description: "Complete launch record with all metadata"
+  }}
+  errors={[
+    "LaunchNotFound - No launch exists with this ID"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_launch \\
+  --launch_id 42
+
+# Returns complete LaunchRecord struct`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_launch_by_token"
+  signature="get_launch_by_token(token_address: Address) -> LaunchRecord"
+  description="Returns the launch record for a specific token address."
+  parameters={[
+    {
+      name: "token_address",
+      type: "Address",
+      description: "The token contract address to look up"
+    }
+  ]}
+  returns={{
+    type: "LaunchRecord",
+    description: "Launch record for this token"
+  }}
+  errors={[
+    "TokenNotFound - No launch found for this token address"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_launch_by_token \\
+  --token_address CTOKEN...
+
+# Returns LaunchRecord for this token`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_launches_by_creator"
+  signature="get_launches_by_creator(creator: Address, offset: u32, limit: u32) -> Vec<LaunchRecord>"
+  description="Returns all launches created by a specific address with pagination."
+  parameters={[
+    {
+      name: "creator",
+      type: "Address", 
+      description: "The creator address to query launches for"
+    },
+    {
+      name: "offset",
+      type: "u32",
+      description: "Number of launches to skip (for pagination)"
+    },
+    {
+      name: "limit", 
+      type: "u32",
+      description: "Maximum number of launches to return (max 100)"
+    }
+  ]}
+  returns={{
+    type: "Vec<LaunchRecord>",
+    description: "Array of launch records by this creator"
+  }}
+  errors={[
+    "InvalidPagination - Limit must be between 1 and 100"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Get first 20 launches by a creator
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_launches_by_creator \\
+  --creator GCREATOR... \\
+  --offset 0 \\
+  --limit 20`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_recent_launches"
+  signature="get_recent_launches(offset: u32, limit: u32) -> Vec<LaunchRecord>"
+  description="Returns the most recent launches in reverse chronological order."
+  parameters={[
+    {
+      name: "offset",
+      type: "u32",
+      description: "Number of launches to skip (for pagination)"
+    },
+    {
+      name: "limit",
+      type: "u32", 
+      description: "Maximum number of launches to return (max 100)"
+    }
+  ]}
+  returns={{
+    type: "Vec<LaunchRecord>",
+    description: "Array of recent launch records"
+  }}
+  errors={[
+    "InvalidPagination - Limit must be between 1 and 100"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Get 50 most recent launches
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_recent_launches \\
+  --offset 0 \\
+  --limit 50`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_launches_by_category"
+  signature="get_launches_by_category(category: String, offset: u32, limit: u32) -> Vec<LaunchRecord>"
+  description="Returns all launches in a specific category with pagination."
+  parameters={[
+    {
+      name: "category",
+      type: "String",
+      description: "The category to filter by (utility, defi, gaming, etc.)"
+    },
+    {
+      name: "offset", 
+      type: "u32",
+      description: "Number of launches to skip (for pagination)"
+    },
+    {
+      name: "limit",
+      type: "u32",
+      description: "Maximum number of launches to return (max 100)"
+    }
+  ]}
+  returns={{
+    type: "Vec<LaunchRecord>",
+    description: "Array of launch records in this category"
+  }}
+  errors={[
+    "InvalidCategory - Category must be a valid category string",
+    "InvalidPagination - Limit must be between 1 and 100"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Get DeFi launches
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_launches_by_category \\
+  --category "defi" \\
+  --offset 0 \\
+  --limit 25`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_verified_launches"
+  signature="get_verified_launches(offset: u32, limit: u32) -> Vec<LaunchRecord>"
+  description="Returns only verified launches with pagination."
+  parameters={[
+    {
+      name: "offset",
+      type: "u32", 
+      description: "Number of launches to skip (for pagination)"
+    },
+    {
+      name: "limit",
+      type: "u32",
+      description: "Maximum number of launches to return (max 100)"
+    }
+  ]}
+  returns={{
+    type: "Vec<LaunchRecord>",
+    description: "Array of verified launch records"
+  }}
+  errors={[
+    "InvalidPagination - Limit must be between 1 and 100"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Get verified launches only
+stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_verified_launches \\
+  --offset 0 \\
+  --limit 30`}
+    </pre>
+  }
+/>
+
+### Statistics Functions
+
+<FunctionRef
+  name="get_total_launches"
+  signature="get_total_launches() -> u64"
+  description="Returns the total number of registered launches."
+  parameters={[]}
+  returns={{
+    type: "u64",
+    description: "Total count of all registered launches"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_total_launches
+
+# Returns: 1247 (total launches)`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="get_category_stats"
+  signature="get_category_stats() -> Vec<CategoryStat>"
+  description="Returns statistics for each category including launch counts."
+  parameters={[]}
+  returns={{
+    type: "Vec<CategoryStat>",
+    description: "Array of category statistics { category: String, count: u64 }"
+  }}
+  errors={[]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CDDDD... \\
+  --source-account GUSER... \\
+  -- get_category_stats
+
+# Returns category breakdown with counts`}
+    </pre>
+  }
+/>
+
+## Events
+
+The registry contract emits the following events:
+
+### LaunchRegistered Event
+```rust
+LaunchRegistered {
+    launch_id: u64,
+    token_address: Address,
+    creator: Address,
+    name: String,
+    symbol: String,
+    category: String,
+    launch_time: u64
+}
+```
+
+### LaunchUpdated Event  
+```rust
+LaunchUpdated {
+    launch_id: u64,
+    updater: Address,
+    update_time: u64
+}
+```
+
+### LaunchVerified Event
+```rust  
+LaunchVerified {
+    launch_id: u64,
+    verifier: Address,
+    verified: bool,
+    verification_time: u64
+}
+```
+
+## Integration Examples
+
+### Building a Launch Explorer
+
+```typescript
+import { Contract } from '@stellar/stellar-sdk'
+
+class LaunchExplorer {
+  constructor(private registryContract: Contract) {}
+  
+  // Get paginated launches for homepage
+  async getRecentLaunches(page: number = 1, pageSize: number = 20) {
+    const offset = (page - 1) * pageSize
+    const launches = await this.registryContract.call('get_recent_launches', {
+      offset,
+      limit: pageSize
+    })
+    
+    const totalLaunches = await this.registryContract.call('get_total_launches')
+    
+    return {
+      launches,
+      totalLaunches,
+      currentPage: page,
+      totalPages: Math.ceil(Number(totalLaunches) / pageSize),
+      hasNext: offset + pageSize < Number(totalLaunches),
+      hasPrev: page > 1
+    }
+  }
+  
+  // Get launches by category with filtering
+  async getLaunchesByCategory(
+    category: string, 
+    verifiedOnly: boolean = false,
+    page: number = 1, 
+    pageSize: number = 20
+  ) {
+    const offset = (page - 1) * pageSize
+    
+    let launches
+    if (verifiedOnly) {
+      // First get all verified launches, then filter by category
+      const allVerified = await this.registryContract.call('get_verified_launches', {
+        offset: 0,
+        limit: 1000 // Get more for filtering
+      })
+      launches = allVerified.filter((launch: any) => launch.category === category)
+        .slice(offset, offset + pageSize)
+    } else {
+      launches = await this.registryContract.call('get_launches_by_category', {
+        category,
+        offset,
+        limit: pageSize
+      })
+    }
+    
+    return launches
+  }
+  
+  // Search launches by name or symbol
+  async searchLaunches(query: string) {
+    // Since there's no built-in search, we need to fetch and filter
+    // In a real implementation, you'd build an indexing service
+    const allLaunches = await this.registryContract.call('get_recent_launches', {
+      offset: 0,
+      limit: 1000
+    })
+    
+    const searchTerm = query.toLowerCase()
+    return allLaunches.filter((launch: any) => 
+      launch.name.toLowerCase().includes(searchTerm) ||
+      launch.symbol.toLowerCase().includes(searchTerm) ||
+      launch.description.toLowerCase().includes(searchTerm)
+    )
+  }
+  
+  // Get launch statistics for analytics dashboard
+  async getLaunchStatistics() {
+    const [totalLaunches, categoryStats] = await Promise.all([
+      this.registryContract.call('get_total_launches'),
+      this.registryContract.call('get_category_stats')
+    ])
+    
+    const verifiedLaunches = await this.registryContract.call('get_verified_launches', {
+      offset: 0,
+      limit: Number(totalLaunches)
+    })
+    
+    return {
+      total: Number(totalLaunches),
+      verified: verifiedLaunches.length,
+      verificationRate: (verifiedLaunches.length / Number(totalLaunches)) * 100,
+      categories: categoryStats
+    }
+  }
+}
+```
+
+### Portfolio Tracker Integration
+
+```typescript
+class PortfolioTracker {
+  constructor(private registryContract: Contract) {}
+  
+  // Get all launches by a specific creator
+  async getUserPortfolio(creatorAddress: string) {
+    const launches = await this.registryContract.call('get_launches_by_creator', {
+      creator: creatorAddress,
+      offset: 0,
+      limit: 100
+    })
+    
+    // Enrich with current token data
+    const enrichedLaunches = await Promise.all(
+      launches.map(async (launch: any) => {
+        // Get current token supply and other live data
+        const tokenContract = new Contract(launch.token_address)
+        const currentSupply = await tokenContract.call('total_supply')
+        
+        return {
+          ...launch,
+          currentSupply,
+          launchDate: new Date(launch.launch_time * 1000),
+          daysActive: Math.floor((Date.now() - (launch.launch_time * 1000)) / (24 * 60 * 60 * 1000))
+        }
+      })
+    )
+    
+    return {
+      totalLaunches: launches.length,
+      verifiedLaunches: launches.filter((l: any) => l.verified).length,
+      launches: enrichedLaunches
+    }
+  }
+  
+  // Track launch performance metrics
+  async getLaunchMetrics(launchId: number) {
+    const launch = await this.registryContract.call('get_launch', {
+      launch_id: launchId
+    })
+    
+    // Calculate time-based metrics
+    const launchTime = launch.launch_time * 1000
+    const now = Date.now()
+    const daysSinceLaunch = Math.floor((now - launchTime) / (24 * 60 * 60 * 1000))
+    
+    return {
+      launch,
+      daysSinceLaunch,
+      verified: launch.verified,
+      hasWebsite: !!launch.website,
+      hasSocialLinks: launch.social_links.length > 0,
+      completenessScore: this.calculateCompletenessScore(launch)
+    }
+  }
+  
+  private calculateCompletenessScore(launch: any): number {
+    let score = 0
+    if (launch.description && launch.description.length > 50) score += 20
+    if (launch.website) score += 20
+    if (launch.logo_url) score += 20
+    if (launch.social_links.length > 0) score += 20
+    if (launch.social_links.length >= 3) score += 10
+    if (launch.verified) score += 10
+    return score
+  }
+}
+```
+
+### Analytics Dashboard
+
+```typescript
+class AnalyticsDashboard {
+  constructor(private registryContract: Contract) {}
+  
+  // Get launch trends over time  
+  async getLaunchTrends(days: number = 30) {
+    const launches = await this.registryContract.call('get_recent_launches', {
+      offset: 0,
+      limit: 1000
+    })
+    
+    const cutoffTime = Math.floor(Date.now() / 1000) - (days * 24 * 60 * 60)
+    const recentLaunches = launches.filter((launch: any) => launch.launch_time >= cutoffTime)
+    
+    // Group by day
+    const trendData = new Map<string, number>()
+    recentLaunches.forEach((launch: any) => {
+      const date = new Date(launch.launch_time * 1000).toISOString().split('T')[0]
+      trendData.set(date, (trendData.get(date) || 0) + 1)
+    })
+    
+    return Array.from(trendData.entries()).map(([date, count]) => ({
+      date,
+      launches: count
+    })).sort((a, b) => a.date.localeCompare(b.date))
+  }
+  
+  // Get top creators by launch count
+  async getTopCreators(limit: number = 10) {
+    const launches = await this.registryContract.call('get_recent_launches', {
+      offset: 0, 
+      limit: 1000
+    })
+    
+    const creatorCounts = new Map<string, number>()
+    launches.forEach((launch: any) => {
+      const creator = launch.creator
+      creatorCounts.set(creator, (creatorCounts.get(creator) || 0) + 1)
+    })
+    
+    return Array.from(creatorCounts.entries())
+      .map(([creator, count]) => ({ creator, launches: count }))
+      .sort((a, b) => b.launches - a.launches)
+      .slice(0, limit)
+  }
+  
+  // Generate ecosystem report
+  async generateEcosystemReport() {
+    const [totalLaunches, categoryStats, verifiedLaunches] = await Promise.all([
+      this.registryContract.call('get_total_launches'),
+      this.registryContract.call('get_category_stats'),  
+      this.registryContract.call('get_verified_launches', { offset: 0, limit: 1000 })
+    ])
+    
+    const trends = await this.getLaunchTrends(30)
+    const topCreators = await this.getTopCreators(5)
+    
+    return {
+      overview: {
+        totalLaunches: Number(totalLaunches),
+        verifiedLaunches: verifiedLaunches.length,
+        verificationRate: (verifiedLaunches.length / Number(totalLaunches)) * 100
+      },
+      categories: categoryStats,
+      trends: {
+        last30Days: trends,
+        totalInLast30Days: trends.reduce((sum, day) => sum + day.launches, 0)
+      },
+      topCreators
+    }
+  }
+}
+```
+
+## Security Considerations
+
+<CalloutBox type="info" title="Registry Integrity">
+The registry relies on token contracts to self-register honestly. While most legitimate projects will register correctly, always verify token authenticity through multiple sources.
+</CalloutBox>
+
+### Best Practices
+
+1. **Verify Legitimate Launches**: Use verification status as one signal, not the only source of truth
+2. **Cross-Reference Data**: Compare registry data with token contract data directly
+3. **Monitor for Spam**: Be aware that anyone can register launches, including spam tokens
+4. **Use Pagination**: Always use proper pagination for large queries to avoid timeouts
+5. **Cache Wisely**: Registry data changes infrequently, so caching is beneficial
+
+### Access Control
+
+- **Launch Registration**: Anyone can register legitimate token launches  
+- **Metadata Updates**: Only original creators can update their launch metadata
+- **Verification**: Only authorized verifiers can change verification status
+- **Queries**: All query functions are public and unrestricted
+
+## Troubleshooting
+
+### Common Issues
+
+**"AlreadyRegistered" Error**
+- This token address has already been registered in the registry
+- Check if the token was registered by a different transaction
+
+**"InvalidMetadata" Error**  
+- Ensure all required metadata fields are provided
+- Verify URLs are properly formatted
+- Check category is one of the supported values
+
+**"LaunchNotFound" Error**
+- Verify the launch ID exists using `get_total_launches`
+- Ensure you're querying the correct registry contract
+
+**"InvalidPagination" Error**
+- Limit must be between 1 and 100
+- Offset cannot be negative
+
+### Performance Optimization
+
+```typescript
+// Efficient pagination strategy
+class EfficientRegistry {
+  private cache = new Map<string, any>()
+  
+  async getCachedLaunches(cacheKey: string, fetcher: () => Promise<any[]>) {
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)
+    }
+    
+    const data = await fetcher()
+    this.cache.set(cacheKey, data)
+    
+    // Cache for 5 minutes
+    setTimeout(() => this.cache.delete(cacheKey), 5 * 60 * 1000)
+    
+    return data
+  }
+  
+  async getRecentLaunchesEfficient(page: number, pageSize: number) {
+    const cacheKey = `recent-${page}-${pageSize}`
+    return this.getCachedLaunches(cacheKey, async () => {
+      return this.registryContract.call('get_recent_launches', {
+        offset: (page - 1) * pageSize,
+        limit: pageSize
+      })
+    })
+  }
+}
+```
+
+</div>
