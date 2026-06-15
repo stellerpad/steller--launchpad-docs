@@ -78,7 +78,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
           {navigation.map((item) => (
             <div key={item.name}>
               <Link
