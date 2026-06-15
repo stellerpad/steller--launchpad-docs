@@ -1,0 +1,504 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+
+<DocHeader 
+  title="Security" 
+  description="Security best practices, auth model, and audit guidelines for Stellar Launchpad"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Security', href: '/docs/security' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Security Model
+
+Stellar Launchpad follows defense-in-depth security principles with multiple layers of protection at the contract, application, and operational levels.
+
+### Core Principles
+
+- **Principle of Least Privilege**: Functions require minimum necessary permissions
+- **Fail-Safe Defaults**: Secure defaults for all operations
+- **Defense in Depth**: Multiple security controls at each layer
+- **Transparency**: All operations are publicly auditable on-chain
+- **Immutability**: Critical security properties cannot be changed
+
+## Authentication & Authorization
+
+### Role-Based Access Control
+
+**Token Contract Roles:**
+- **Admin**: Can mint, burn, and transfer admin privileges
+- **Token Holder**: Can transfer tokens they own
+- **Public**: Can read token information
+
+**Vesting Contract Roles:**
+- **Creator**: Can create and revoke schedules (if revocable)
+- **Beneficiary**: Can claim vested tokens from their schedules
+- **Public**: Can read schedule information
+
+**Airdrop Contract Roles:**
+- **Creator**: Can create and execute airdrops
+- **Recipients**: Can claim from claimable airdrops
+- **Public**: Can read airdrop information
+
+**Registry Contract Roles:**
+- **Anyone**: Can register legitimate launches
+- **Creator**: Can update their launch metadata
+- **Verifiers**: Can set verification status (admin-controlled)
+
+### Permission Validation
+
+```rust
+// Example: Token admin check
+fn require_admin(env: &Env, token: &Address) {
+    let admin = get_admin(env, token);
+    admin.require_auth();
+}
+
+// Example: Vesting beneficiary check  
+fn require_beneficiary(env: &Env, schedule_id: u64, caller: &Address) {
+    let schedule = get_schedule(env, schedule_id);
+    if schedule.beneficiary != *caller {
+        panic_with_error!(env, Error::NotBeneficiary);
+    }
+    caller.require_auth();
+}
+```
+
+## Access Control Best Practices
+
+### Multi-Signature Admin Accounts
+
+<CalloutBox type="warning" title="Single Points of Failure">
+Using single-signature admin accounts creates security risks. Always use multi-signature wallets for production token admins.
+</CalloutBox>
+
+**Recommended Setup:**
+- **Development**: Single signature for testing
+- **Staging**: 2-of-3 multi-signature  
+- **Production**: 3-of-5 multi-signature with hardware wallets
+
+**Multi-Sig Implementation:**
+```typescript
+import { Account, Transaction, Keypair } from '@stellar/stellar-sdk'
+
+// Create multi-sig transaction
+async function createMultiSigMint(
+  tokenAddress: string,
+  recipient: string,
+  amount: string,
+  signers: Keypair[]
+) {
+  const tx = await sdk.token.buildMintTransaction({
+    token: tokenAddress,
+    to: recipient,
+    amount
+  })
+  
+  // Sign with multiple keys
+  signers.forEach(signer => tx.sign(signer))
+  
+  return tx
+}
+```
+
+### Admin Key Management
+
+**Key Storage:**
+- **Hardware Wallets**: Ledger, Trezor for production
+- **Encrypted Storage**: For development and staging
+- **Key Rotation**: Regular rotation of admin keys
+- **Backup Procedures**: Secure backup and recovery processes
+
+**Key Rotation Example:**
+```typescript
+async function rotateAdminKey(
+  currentAdminKeypair: Keypair,
+  newAdminAddress: string,
+  tokenAddress: string
+) {
+  // Transfer admin privileges
+  await sdk.token.setAdmin({
+    currentAdmin: currentAdminKeypair,
+    newAdmin: newAdminAddress,
+    token: tokenAddress
+  })
+  
+  // Verify transfer
+  const tokenInfo = await sdk.token.getInfo(tokenAddress)
+  if (tokenInfo.admin !== newAdminAddress) {
+    throw new Error('Admin transfer failed')
+  }
+}
+```
+
+## Contract Security
+
+### Reentrancy Protection
+
+All contracts implement reentrancy guards:
+
+```rust
+// Reentrancy protection pattern
+static mut REENTRANCY_GUARD: bool = false;
+
+fn non_reentrant<F, R>(env: &Env, f: F) -> R 
+where F: FnOnce() -> R {
+    unsafe {
+        if REENTRANCY_GUARD {
+            panic_with_error!(env, Error::ReentrancyDetected);
+        }
+        REENTRANCY_GUARD = true;
+    }
+    
+    let result = f();
+    
+    unsafe {
+        REENTRANCY_GUARD = false;
+    }
+    
+    result
+}
+```
+
+### Integer Overflow Protection
+
+Contracts use checked arithmetic:
+
+```rust
+// Safe arithmetic operations
+fn safe_add(a: u128, b: u128) -> Result<u128, Error> {
+    a.checked_add(b).ok_or(Error::ArithmeticOverflow)
+}
+
+fn safe_mul(a: u128, b: u128) -> Result<u128, Error> {
+    a.checked_mul(b).ok_or(Error::ArithmeticOverflow)
+}
+
+// Usage in vesting calculations
+let vested_amount = safe_mul(
+    total_amount,
+    elapsed_time as u128
+)? / total_duration as u128;
+```
+
+### Input Validation
+
+All user inputs are validated:
+
+```rust
+// Address validation
+fn validate_address(env: &Env, addr: &Address) {
+    // Stellar addresses are validated by the platform
+    // Additional checks for specific requirements
+}
+
+// Amount validation
+fn validate_amount(env: &Env, amount: u128) {
+    if amount == 0 {
+        panic_with_error!(env, Error::InvalidAmount);
+    }
+}
+
+// Time validation  
+fn validate_time(env: &Env, timestamp: u64) {
+    let current_time = env.ledger().timestamp();
+    if timestamp < current_time {
+        panic_with_error!(env, Error::InvalidTime);
+    }
+}
+```
+
+## Known Security Considerations
+
+### Token Contract Limitations
+
+**Admin Privileges:**
+- Token admin can mint unlimited tokens
+- Token admin can burn tokens from any address  
+- Admin privileges cannot be revoked, only transferred
+
+**Mitigation Strategies:**
+- Use multi-signature admin accounts
+- Implement governance for admin actions
+- Consider time-locks for sensitive operations
+- Monitor all admin transactions
+
+### Vesting Contract Considerations
+
+**Revocable Schedules:**
+- Creators can revoke vesting schedules if marked as revocable
+- Beneficiaries have no protection against revocation
+- Revoked tokens are returned to the creator
+
+**Mitigation Strategies:**
+- Use non-revocable schedules for external parties
+- Clearly communicate revocability to beneficiaries
+- Implement governance for revocation decisions
+
+### Airdrop Contract Risks
+
+**Merkle Tree Security:**
+- Merkle proofs must be generated correctly
+- Invalid trees will prevent legitimate claims
+- Proof data must be distributed securely
+
+**Mitigation Strategies:**
+- Thoroughly test Merkle tree generation
+- Use established libraries for proof generation
+- Implement proof verification in frontends
+- Provide multiple channels for proof distribution
+
+### Registry Integrity
+
+**Spam Registrations:**
+- Anyone can register launches in the registry
+- No built-in spam protection at contract level
+- Verification is manual process
+
+**Mitigation Strategies:**
+- Implement verification processes
+- Use reputation systems in frontends
+- Monitor for suspicious registration patterns
+- Implement rate limiting in applications
+
+## Operational Security
+
+### Network Security
+
+**RPC Endpoint Security:**
+- Use official Stellar RPC endpoints
+- Implement rate limiting and request validation
+- Monitor for unusual transaction patterns
+- Use multiple RPC providers for redundancy
+
+**Transaction Security:**
+- Always verify transaction details before signing
+- Implement transaction simulation and preview
+- Use appropriate fee limits
+- Monitor for transaction failures and retries
+
+### Application Security
+
+**Frontend Security:**
+```typescript
+// Input sanitization
+function sanitizeInput(input: string): string {
+  return input.trim().slice(0, 1000) // Limit length
+}
+
+// Address validation
+function isValidStellarAddress(address: string): boolean {
+  try {
+    Keypair.fromPublicKey(address)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Amount validation
+function isValidAmount(amount: string): boolean {
+  const num = parseFloat(amount)
+  return !isNaN(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER
+}
+```
+
+**API Security:**
+- Implement rate limiting per IP/user
+- Validate all inputs and parameters
+- Use HTTPS for all communications
+- Implement proper CORS policies
+
+### Monitoring and Alerting
+
+**Transaction Monitoring:**
+```typescript
+class SecurityMonitor {
+  async monitorLargeTransfers(tokenAddress: string, threshold: string) {
+    sdk.token.onTransfer((transfer) => {
+      if (parseFloat(transfer.amount) > parseFloat(threshold)) {
+        this.alertLargeTransfer(transfer)
+      }
+    })
+  }
+  
+  async monitorAdminActions(tokenAddress: string) {
+    sdk.token.onMint((mint) => {
+      this.alertAdminAction('MINT', mint)
+    })
+    
+    sdk.token.onBurn((burn) => {
+      this.alertAdminAction('BURN', burn)
+    })
+    
+    sdk.token.onAdminChanged((change) => {
+      this.alertAdminAction('ADMIN_CHANGE', change)
+    })
+  }
+  
+  private alertLargeTransfer(transfer: any) {
+    console.log(`Large transfer detected: ${transfer.amount} tokens`)
+    // Send to monitoring system
+  }
+  
+  private alertAdminAction(action: string, data: any) {
+    console.log(`Admin action detected: ${action}`, data)
+    // Send to security team
+  }
+}
+```
+
+## Audit Guidelines
+
+### Pre-Audit Checklist
+
+**Code Quality:**
+- [ ] All functions have proper error handling
+- [ ] Input validation on all external functions
+- [ ] No unused code or functions
+- [ ] Comprehensive test coverage (>95%)
+- [ ] Documentation for all public functions
+
+**Security Controls:**
+- [ ] Reentrancy protection implemented
+- [ ] Integer overflow protection
+- [ ] Proper access controls
+- [ ] No hardcoded secrets or addresses
+- [ ] Safe external calls
+
+**Testing:**
+- [ ] Unit tests for all functions
+- [ ] Integration tests for workflows
+- [ ] Negative testing for error conditions
+- [ ] Gas usage analysis
+- [ ] Performance benchmarks
+
+### Audit Process
+
+**1. Static Analysis:**
+- Code review for common vulnerabilities
+- Automated security scanning tools
+- Architecture and design review
+
+**2. Dynamic Testing:**
+- Functional testing on testnet
+- Stress testing with large datasets
+- Edge case and boundary testing
+- Gas consumption analysis
+
+**3. Manual Review:**
+- Line-by-line code review
+- Business logic validation
+- Threat modeling
+- Risk assessment
+
+### Post-Audit Actions
+
+**Vulnerability Response:**
+1. **Assess Impact**: Determine severity and affected systems
+2. **Develop Fix**: Create and test fix for vulnerability  
+3. **Deploy Safely**: Use proper deployment procedures
+4. **Verify Fix**: Confirm vulnerability is resolved
+5. **Communicate**: Notify users if necessary
+
+**Continuous Monitoring:**
+- Regular security reviews
+- Automated vulnerability scanning
+- Bug bounty programs
+- Community security feedback
+
+## Incident Response
+
+### Security Incident Procedures
+
+**1. Detection:**
+- Automated monitoring alerts
+- Community reports
+- Internal discovery
+
+**2. Assessment:**
+- Determine scope and impact
+- Identify affected systems
+- Assess ongoing risk
+
+**3. Containment:**
+- Pause affected operations if possible
+- Prevent further exploitation
+- Preserve evidence
+
+**4. Recovery:**
+- Implement fixes
+- Restore normal operations
+- Verify system integrity
+
+**5. Lessons Learned:**
+- Document incident details
+- Update security procedures
+- Improve monitoring
+
+### Emergency Procedures
+
+**Contract Pausing (if implemented):**
+```typescript
+// Emergency pause functionality
+async function emergencyPause(adminKeypair: Keypair, contractAddress: string) {
+  // Note: Not all contracts have pause functionality
+  // This would need to be implemented in contract design
+  await sdk.contract.pause({
+    admin: adminKeypair,
+    contract: contractAddress
+  })
+}
+```
+
+**Communication Plan:**
+- Internal security team notification
+- User communication via official channels
+- Transparent incident reporting
+- Regular status updates
+
+## Security Resources
+
+### Documentation and Guidelines
+
+- [Stellar Smart Contract Security Guide](https://stellar.org/developers/docs/smart-contracts/security)
+- [Soroban Security Best Practices](https://soroban.stellar.org/docs/security)
+- [OWASP Smart Contract Security](https://owasp.org/www-project-smart-contract-security/)
+
+### Security Tools
+
+**Static Analysis:**
+- Soroban CLI security checks
+- Custom linting rules
+- Automated vulnerability scanners
+
+**Dynamic Testing:**
+- Testnet stress testing
+- Gas analysis tools
+- Transaction simulation
+
+**Monitoring:**
+- StellarExpert for transaction monitoring
+- Custom alerting systems
+- Community watch programs
+
+### Getting Security Help
+
+**Professional Audits:**
+- Engage reputable security firms
+- Schedule regular security reviews
+- Participate in bug bounty programs
+
+**Community Security:**
+- Stellar Security Discord channel
+- GitHub security advisory process
+- Security researcher coordination
+
+<CalloutBox type="warning" title="Security is Ongoing">
+Security is not a one-time effort. Continuously monitor, update, and improve your security practices as the ecosystem evolves.
+</CalloutBox>
+
+</div>

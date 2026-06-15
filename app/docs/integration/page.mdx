@@ -76,4 +76,525 @@ const sdk = new LaunchpadSDK({
 })
 ```
 
-## Token Inte
+## Token Integration
+
+### Launch Tokens Programmatically
+
+```typescript
+async function launchToken(
+  creatorKeypair: Keypair,
+  tokenDetails: {
+    name: string
+    symbol: string
+    totalSupply: string
+    decimals: number
+    description: string
+  }
+) {
+  const result = await sdk.token.launch({
+    creator: creatorKeypair,
+    ...tokenDetails
+  })
+  
+  return {
+    tokenAddress: result.contractAddress,
+    transactionHash: result.hash,
+    launchId: result.launchId
+  }
+}
+
+// Usage
+const myToken = await launchToken(creatorKeypair, {
+  name: "My Project Token",
+  symbol: "MPT", 
+  totalSupply: "1000000",
+  decimals: 7,
+  description: "Utility token for my dApp"
+})
+```
+
+### Token Operations
+
+```typescript
+// Get token info
+const tokenInfo = await sdk.token.getInfo(tokenAddress)
+
+// Transfer tokens  
+await sdk.token.transfer({
+  from: senderKeypair,
+  to: receiverAddress,
+  amount: "1000",
+  token: tokenAddress
+})
+
+// Check balance
+const balance = await sdk.token.getBalance(tokenAddress, userAddress)
+
+// Mint tokens (admin only)
+await sdk.token.mint({
+  admin: adminKeypair,
+  to: recipientAddress,
+  amount: "5000",
+  token: tokenAddress
+})
+```
+
+## Vesting Integration
+
+### Create Vesting Schedules
+
+```typescript
+async function createTeamVesting(
+  creatorKeypair: Keypair,
+  token: string,
+  teamMembers: Array<{
+    address: string
+    amount: string
+    role: string
+  }>
+) {
+  const schedules = []
+  
+  for (const member of teamMembers) {
+    const schedule = await sdk.vesting.create({
+      creator: creatorKeypair,
+      token,
+      beneficiary: member.address,
+      totalAmount: member.amount,
+      startTime: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days from now
+      cliffDuration: 365 * 24 * 60 * 60, // 1 year cliff
+      vestingDuration: 4 * 365 * 24 * 60 * 60, // 4 years total
+      revocable: true
+    })
+    
+    schedules.push({
+      ...schedule,
+      member: member.role
+    })
+  }
+  
+  return schedules
+}
+```
+
+### Monitor Vesting Progress
+
+```typescript
+class VestingMonitor {
+  async getClaimableAmounts(beneficiary: string): Promise<Array<{
+    scheduleId: number
+    claimable: string
+    total: string
+    progress: number
+  }>> {
+    const scheduleIds = await sdk.vesting.getSchedulesForBeneficiary(beneficiary)
+    
+    const results = await Promise.all(
+      scheduleIds.map(async (id) => {
+        const schedule = await sdk.vesting.getSchedule(id)
+        const claimable = await sdk.vesting.calculateClaimable(id)
+        
+        return {
+          scheduleId: id,
+          claimable,
+          total: schedule.totalAmount,
+          progress: (parseInt(claimable) / parseInt(schedule.totalAmount)) * 100
+        }
+      })
+    )
+    
+    return results
+  }
+  
+  async claimAll(beneficiaryKeypair: Keypair) {
+    const scheduleIds = await sdk.vesting.getSchedulesForBeneficiary(
+      beneficiaryKeypair.publicKey()
+    )
+    
+    const claims = []
+    for (const id of scheduleIds) {
+      const claimable = await sdk.vesting.calculateClaimable(id)
+      if (parseInt(claimable) > 0) {
+        const tx = await sdk.vesting.claim({
+          beneficiary: beneficiaryKeypair,
+          scheduleId: id
+        })
+        claims.push(tx)
+      }
+    }
+    
+    return claims
+  }
+}
+```
+
+## Airdrop Integration
+
+### CSV-Based Airdrop
+
+```typescript
+import fs from 'fs'
+import csv from 'csv-parser'
+
+interface Recipient {
+  address: string
+  amount?: string
+  weight?: number
+}
+
+async function runCSVAirdrop(
+  creatorKeypair: Keypair,
+  csvPath: string,
+  token: string,
+  type: 'equal' | 'weighted' | 'claimable'
+) {
+  // Parse CSV
+  const recipients: Recipient[] = []
+  
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(csvPath)
+      .pipe(csv())
+      .on('data', (row) => recipients.push(row))
+      .on('end', async () => {
+        try {
+          let airdrop
+          
+          switch (type) {
+            case 'equal':
+              airdrop = await sdk.airdrop.createEqual({
+                creator: creatorKeypair,
+                token,
+                recipients: recipients.map(r => r.address),
+                amountPerRecipient: "100", // 100 tokens each
+                executeImmediately: true
+              })
+              break
+              
+            case 'weighted':
+              airdrop = await sdk.airdrop.createWeighted({
+                creator: creatorKeypair,
+                token,
+                recipients: recipients.map(r => ({
+                  address: r.address,
+                  weight: r.weight || 1
+                })),
+                totalAmount: "10000",
+                executeImmediately: false
+              })
+              
+              // Execute in batches
+              await sdk.airdrop.execute(airdrop.id, { batchSize: 100 })
+              break
+              
+            case 'claimable':
+              const merkleTree = sdk.airdrop.generateMerkleTree(recipients)
+              airdrop = await sdk.airdrop.createClaimable({
+                creator: creatorKeypair,
+                token,
+                merkleRoot: merkleTree.root,
+                totalAmount: recipients.reduce((sum, r) => sum + parseInt(r.amount || "0"), 0).toString(),
+                claimDeadline: Date.now() + (90 * 24 * 60 * 60 * 1000) // 90 days
+              })
+              
+              // Generate proofs for recipients
+              const proofs = recipients.map((r, i) => ({
+                address: r.address,
+                amount: r.amount || "0",
+                proof: merkleTree.getProof(i)
+              }))
+              
+              // Save proofs for distribution
+              fs.writeFileSync('airdrop-proofs.json', JSON.stringify(proofs, null, 2))
+              break
+          }
+          
+          resolve(airdrop)
+        } catch (error) {
+          reject(error)
+        }
+      })
+  })
+}
+```
+
+## Registry Integration
+
+### Query and Discovery
+
+```typescript
+class LaunchExplorer {
+  async searchLaunches(query: {
+    category?: string
+    verified?: boolean
+    creator?: string
+    limit?: number
+    offset?: number
+  }) {
+    if (query.creator) {
+      return sdk.registry.getLaunchesByCreator(query.creator, query.offset || 0, query.limit || 20)
+    }
+    
+    if (query.category) {
+      return sdk.registry.getLaunchesByCategory(query.category, query.offset || 0, query.limit || 20)
+    }
+    
+    if (query.verified) {
+      return sdk.registry.getVerifiedLaunches(query.offset || 0, query.limit || 20)
+    }
+    
+    return sdk.registry.getRecentLaunches(query.offset || 0, query.limit || 20)
+  }
+  
+  async getLaunchAnalytics() {
+    const [total, categories] = await Promise.all([
+      sdk.registry.getTotalLaunches(),
+      sdk.registry.getCategoryStats()
+    ])
+    
+    return { total, categories }
+  }
+}
+```
+
+## Event Monitoring
+
+### Real-time Event Tracking
+
+```typescript
+class EventMonitor {
+  private eventCallbacks = new Map<string, Function[]>()
+  
+  constructor(private sdk: LaunchpadSDK) {
+    this.startListening()
+  }
+  
+  on(event: string, callback: Function) {
+    if (!this.eventCallbacks.has(event)) {
+      this.eventCallbacks.set(event, [])
+    }
+    this.eventCallbacks.get(event)!.push(callback)
+  }
+  
+  private async startListening() {
+    // Monitor token launches
+    sdk.registry.onLaunchRegistered((launch) => {
+      this.emit('launch', launch)
+    })
+    
+    // Monitor vesting claims
+    sdk.vesting.onTokensClaimed((claim) => {
+      this.emit('vestingClaim', claim)
+    })
+    
+    // Monitor airdrop completions
+    sdk.airdrop.onAirdropCompleted((airdrop) => {
+      this.emit('airdropComplete', airdrop)
+    })
+  }
+  
+  private emit(event: string, data: any) {
+    const callbacks = this.eventCallbacks.get(event) || []
+    callbacks.forEach(callback => callback(data))
+  }
+}
+
+// Usage
+const monitor = new EventMonitor(sdk)
+
+monitor.on('launch', (launch) => {
+  console.log(`New token launched: ${launch.name} (${launch.symbol})`)
+  // Send notification, update database, etc.
+})
+
+monitor.on('vestingClaim', (claim) => {
+  console.log(`Tokens claimed: ${claim.amount} from schedule ${claim.scheduleId}`)
+})
+```
+
+## Error Handling
+
+### Robust Error Handling
+
+```typescript
+class LaunchpadClient {
+  async safeTokenLaunch(params: TokenLaunchParams) {
+    try {
+      return await sdk.token.launch(params)
+    } catch (error) {
+      if (error.message.includes('InsufficientBalance')) {
+        throw new Error('Not enough XLM to pay transaction fees')
+      } else if (error.message.includes('InvalidSymbol')) {
+        throw new Error('Token symbol must be 2-12 characters')
+      } else if (error.message.includes('AlreadyExists')) {
+        throw new Error('A token with this symbol already exists')
+      }
+      throw error
+    }
+  }
+  
+  async retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    delay: number = 1000
+  ): Promise<T> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await operation()
+      } catch (error) {
+        if (i === maxRetries - 1) throw error
+        
+        console.log(`Operation failed, retrying in ${delay}ms... (${i + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        delay *= 2 // Exponential backoff
+      }
+    }
+    throw new Error('Max retries exceeded')
+  }
+}
+```
+
+## Testing
+
+### Unit Testing with Jest
+
+```typescript
+import { LaunchpadSDK } from '@stellar/launchpad-sdk'
+import { Keypair, Networks } from '@stellar/stellar-sdk'
+
+describe('Launchpad Integration', () => {
+  let sdk: LaunchpadSDK
+  let testKeypair: Keypair
+  
+  beforeAll(async () => {
+    sdk = new LaunchpadSDK({
+      network: Networks.TESTNET,
+      // ... test configuration
+    })
+    
+    testKeypair = Keypair.random()
+    // Fund test account...
+  })
+  
+  test('should launch token successfully', async () => {
+    const result = await sdk.token.launch({
+      creator: testKeypair,
+      name: 'Test Token',
+      symbol: 'TEST',
+      totalSupply: '1000',
+      decimals: 7,
+      description: 'Test token for integration tests'
+    })
+    
+    expect(result.contractAddress).toBeDefined()
+    expect(result.transactionHash).toBeDefined()
+  })
+  
+  test('should create vesting schedule', async () => {
+    const beneficiary = Keypair.random()
+    
+    const schedule = await sdk.vesting.create({
+      creator: testKeypair,
+      token: 'TOKEN_ADDRESS',
+      beneficiary: beneficiary.publicKey(),
+      totalAmount: '1000',
+      startTime: Date.now(),
+      vestingDuration: 365 * 24 * 60 * 60,
+      revocable: true
+    })
+    
+    expect(schedule.scheduleId).toBeGreaterThan(0)
+  })
+})
+```
+
+## Production Considerations
+
+### Performance Optimization
+
+```typescript
+class OptimizedClient {
+  private cache = new Map()
+  private requestQueue = new Map()
+  
+  async getCachedTokenInfo(address: string) {
+    if (this.cache.has(address)) {
+      return this.cache.get(address)
+    }
+    
+    // Avoid duplicate requests
+    if (this.requestQueue.has(address)) {
+      return this.requestQueue.get(address)
+    }
+    
+    const promise = sdk.token.getInfo(address)
+    this.requestQueue.set(address, promise)
+    
+    try {
+      const info = await promise
+      this.cache.set(address, info)
+      return info
+    } finally {
+      this.requestQueue.delete(address)
+    }
+  }
+  
+  async batchGetBalances(tokenAddress: string, addresses: string[]) {
+    const balances = await Promise.all(
+      addresses.map(addr => 
+        sdk.token.getBalance(tokenAddress, addr).catch(() => '0')
+      )
+    )
+    
+    return addresses.reduce((acc, addr, i) => {
+      acc[addr] = balances[i]
+      return acc
+    }, {} as Record<string, string>)
+  }
+}
+```
+
+### Security Best Practices
+
+```typescript
+// Input validation
+function validateAddress(address: string): boolean {
+  try {
+    Keypair.fromPublicKey(address)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function validateAmount(amount: string): boolean {
+  const num = parseFloat(amount)
+  return !isNaN(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER
+}
+
+// Rate limiting
+class RateLimiter {
+  private requests = new Map<string, number[]>()
+  
+  canMakeRequest(identifier: string, maxRequests: number, windowMs: number): boolean {
+    const now = Date.now()
+    const window = this.requests.get(identifier) || []
+    
+    // Remove old requests
+    const validRequests = window.filter(time => now - time < windowMs)
+    
+    if (validRequests.length >= maxRequests) {
+      return false
+    }
+    
+    validRequests.push(now)
+    this.requests.set(identifier, validRequests)
+    return true
+  }
+}
+```
+
+<CalloutBox type="success" title="Integration Complete">
+You now have everything needed to integrate Stellar Launchpad into your project. Start with token launches, then add vesting and airdrop features as needed.
+</CalloutBox>
+
+</div>
