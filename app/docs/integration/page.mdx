@@ -1,0 +1,79 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Integration Guide" 
+  description="Integrate Stellar Launchpad contracts into your own projects and applications"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Integration Guide', href: '/docs/integration' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+This guide shows how to integrate Stellar Launchpad contracts into your own projects, whether you're building a DeFi protocol, NFT marketplace, DAO platform, or any application that needs token functionality.
+
+### Integration Scenarios
+
+- **DeFi Protocols**: Launch governance tokens with built-in vesting
+- **NFT Projects**: Create utility tokens for NFT ecosystems  
+- **DAO Platforms**: Issue governance tokens with fair distribution
+- **Gaming Projects**: Launch in-game tokens with player airdrops
+- **Corporate**: Create employee stock option programs with vesting
+
+### What You'll Learn
+
+- TypeScript/JavaScript SDK usage
+- Contract interaction patterns
+- Event monitoring and indexing
+- Error handling best practices
+- Testing strategies
+
+<CalloutBox type="info" title="Prerequisites">
+Familiarity with JavaScript/TypeScript, Stellar SDK, and smart contract concepts. See [Getting Started](/docs/getting-started) for basic setup.
+</CalloutBox>
+
+## SDK Installation and Setup
+
+### Install Dependencies
+
+```bash
+npm install @stellar/stellar-sdk
+npm install @stellar/launchpad-sdk  # Our SDK wrapper
+npm install @types/node # For TypeScript support
+```
+
+### Basic Configuration
+
+```typescript
+import { 
+  Server, 
+  Keypair, 
+  Networks,
+  Contract,
+  SorobanRpc 
+} from '@stellar/stellar-sdk'
+import { LaunchpadSDK } from '@stellar/launchpad-sdk'
+
+// Initialize connection
+const server = new SorobanRpc.Server('https://soroban-testnet.stellar.org')
+const network = Networks.TESTNET
+
+// Initialize SDK
+const sdk = new LaunchpadSDK({
+  server,
+  network,
+  contracts: {
+    token: 'CAAAA...',      // Token contract address
+    vesting: 'CBBBB...',    // Vesting contract address  
+    airdrop: 'CCCCC...',    // Airdrop contract address
+    registry: 'CDDDD...'    // Registry contract address
+  }
+})
+```
+
+## Token Inte

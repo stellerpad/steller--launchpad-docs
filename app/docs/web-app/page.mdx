@@ -1,0 +1,461 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Web App Guide" 
+  description="Use the web dashboard to launch tokens, create vesting schedules, and browse the ecosystem"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Web App Guide', href: '/docs/web-app' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Stellar Launchpad Web App provides a user-friendly interface for all launchpad operations without requiring command-line knowledge. Built with modern web technologies, it offers an intuitive experience for launching tokens, managing vesting schedules, running airdrops, and exploring the ecosystem.
+
+### Key Features
+
+- **Wallet Integration**: Seamless Freighter wallet connection
+- **Token Launcher**: Visual token creation workflow
+- **Vesting Dashboard**: Manage all vesting schedules in one place
+- **Airdrop Tools**: Run airdrops with CSV upload and batch processing
+- **Launch Explorer**: Browse and discover all ecosystem launches
+- **Portfolio View**: Track your launched tokens and investments
+- **Mobile Responsive**: Works perfectly on mobile devices
+
+### Supported Wallets
+
+- **Freighter**: Primary wallet support with full feature integration
+- **Albedo**: Basic transaction signing support
+- **Wallet Connect**: Support for hardware wallets via WalletConnect
+
+<CalloutBox type="info" title="Web App URL">
+**<NetworkBadge network="testnet" />** [https://testnet.launchpad.stellar.org](https://testnet.launchpad.stellar.org)  
+**<NetworkBadge network="mainnet" />** [https://launchpad.stellar.org](https://launchpad.stellar.org)
+</CalloutBox>
+
+## Getting Started
+
+### Step 1: Connect Your Wallet
+
+1. **Open the Web App**: Navigate to the Stellar Launchpad website
+2. **Click "Connect Wallet"**: Located in the top-right corner
+3. **Select Freighter**: Choose Freighter from the wallet options
+4. **Approve Connection**: Confirm the connection request in Freighter
+5. **Switch Network**: Ensure you're on the correct network (testnet/mainnet)
+
+<CalloutBox type="warning" title="Network Mismatch">
+If the app shows a network mismatch warning, switch networks in Freighter and refresh the page.
+</CalloutBox>
+
+### Step 2: Fund Your Wallet
+
+**For Testnet:**
+- Use the built-in "Fund Account" button for free testnet XLM
+- Or visit [Stellar Laboratory Friendbot](https://laboratory.stellar.org/#account-creator?network=test)
+
+**For Mainnet:**
+- Purchase XLM from an exchange (Coinbase, Kraken, etc.)
+- Transfer XLM to your Freighter wallet address
+- Minimum ~5 XLM recommended for multiple transactions
+
+### Step 3: Explore the Dashboard
+
+The main dashboard shows:
+- **Your Portfolio**: Tokens you've launched
+- **Recent Activity**: Your recent transactions
+- **Network Status**: Current network and block height
+- **Quick Actions**: Launch token, create vesting, run airdrop
+
+## Launching Your First Token
+
+### Token Launch Workflow
+
+1. **Navigate to Launch**: Click "Launch Token" from the dashboard
+2. **Basic Information**: Fill in the token details form
+3. **Advanced Options**: Configure additional settings (optional)
+4. **Review & Confirm**: Review all details before submitting
+5. **Sign Transaction**: Approve the transaction in Freighter
+6. **Success**: View your launched token in the portfolio
+
+### Basic Token Information
+
+**Required Fields:**
+- **Token Name**: Human-readable name (e.g., "My Awesome Token")
+- **Symbol**: Short identifier (e.g., "MAT", 2-12 characters)
+- **Total Supply**: Initial number of tokens to mint
+- **Decimals**: Decimal places (typically 7 for Stellar)
+- **Description**: Brief description of the token's purpose
+
+**Example Form Data:**
+```
+Token Name: DeFi Protocol Token
+Symbol: DPT
+Total Supply: 10,000,000
+Decimals: 7
+Description: Utility token for our decentralized finance protocol
+```
+
+### Advanced Options
+
+**Metadata (Optional):**
+- **Website URL**: Official project website
+- **Logo Image**: Upload or provide URL to token logo
+- **Category**: Select from predefined categories (DeFi, Gaming, etc.)
+- **Social Links**: Twitter, Discord, Telegram links
+
+**Launch Settings:**
+- **Auto-Register**: Automatically register in the launchpad registry
+- **Verification Request**: Request verification for the launch
+- **Public Launch**: Make launch visible in the explorer immediately
+
+### Transaction Process
+
+1. **Review Summary**: Double-check all token parameters
+2. **Fee Estimation**: See the estimated XLM transaction fee
+3. **Click "Launch Token"**: Initiate the transaction
+4. **Freighter Approval**: Review and approve in Freighter
+5. **Transaction Broadcast**: Transaction is sent to the network
+6. **Confirmation**: Wait for network confirmation (5-10 seconds)
+7. **Success Screen**: View transaction details and token address
+
+<CalloutBox type="success" title="Launch Complete">
+Once confirmed, your token is live on Stellar! You'll receive the full supply in your wallet and can start distributing or trading immediately.
+</CalloutBox>
+
+## Creating Vesting Schedules
+
+### Vesting Dashboard
+
+Access vesting features through the "Vesting" tab:
+- **Create Schedule**: Set up new vesting for team/advisors
+- **My Schedules**: View schedules you've created
+- **My Claims**: View schedules where you're the beneficiary
+- **Schedule Analytics**: Track vesting progress and claims
+
+### Creating a Vesting Schedule
+
+1. **Select Token**: Choose from your launched tokens
+2. **Beneficiary**: Enter the recipient's Stellar address  
+3. **Vesting Parameters**: Configure the vesting schedule
+4. **Review & Create**: Confirm and sign the transaction
+
+### Vesting Parameters
+
+**Basic Settings:**
+- **Total Amount**: Number of tokens to vest
+- **Beneficiary Address**: Who will receive the vested tokens
+- **Start Date**: When vesting begins (can be future date)
+- **Revocable**: Whether you can cancel the schedule
+
+**Vesting Type:**
+- **Linear**: Gradual unlock over time
+- **Cliff**: All tokens unlock at once after waiting period
+- **Hybrid**: Cliff + linear combination
+
+**Timeline Configuration:**
+- **Cliff Period**: Initial waiting period (0 for no cliff)
+- **Total Duration**: Complete vesting timeframe
+- **Custom Schedule**: Advanced custom vesting curves
+
+### Vesting Examples in the UI
+
+**Team Member Vesting:**
+```
+Token: DeFi Protocol Token (DPT)
+Beneficiary: GTEAMMEMBER...
+Total Amount: 100,000 DPT
+Vesting Type: Hybrid
+Cliff Period: 12 months (25% of tokens)
+Total Duration: 48 months
+Start Date: January 1, 2024
+Revocable: Yes
+```
+
+**Advisor Vesting:**
+```
+Token: DeFi Protocol Token (DPT)  
+Beneficiary: GADVISOR...
+Total Amount: 25,000 DPT
+Vesting Type: Linear
+Cliff Period: 0 months
+Total Duration: 24 months
+Start Date: Immediate
+Revocable: No
+```
+
+### Managing Vesting Schedules
+
+**Creator Actions:**
+- **View Schedule**: See detailed vesting timeline
+- **Revoke Schedule**: Cancel revocable schedules (returns unvested tokens)
+- **Update Metadata**: Add notes or descriptions
+- **Export Data**: Download vesting details as CSV
+
+**Beneficiary Actions:**
+- **View Progress**: See vesting timeline and claimable amounts
+- **Claim Tokens**: Withdraw available vested tokens
+- **Partial Claims**: Claim specific amounts instead of all available
+- **Transaction History**: View all previous claims
+
+## Running Airdrops
+
+### Airdrop Dashboard
+
+The airdrop section provides tools for:
+- **Create Airdrop**: Set up new token distributions
+- **Manage Airdrops**: Monitor active and completed airdrops
+- **Recipient Management**: Upload and manage recipient lists
+- **Execution Monitoring**: Track batch processing progress
+
+### Airdrop Types
+
+**Equal Distribution:**
+- Every recipient gets the same amount
+- Simple setup with recipient list
+- Immediate execution or scheduled
+
+**Weighted Distribution:**
+- Recipients get amounts based on their weight/score
+- Upload CSV with addresses and weights
+- Proportional distribution from total allocation
+
+**Claimable Airdrop:**
+- Recipients claim tokens themselves
+- Gas-efficient for large distributions
+- Optional claim deadlines
+
+### Creating an Airdrop
+
+1. **Select Airdrop Type**: Choose equal, weighted, or claimable
+2. **Configure Distribution**: Set amounts and parameters
+3. **Upload Recipients**: Use CSV file or manual entry
+4. **Review Settings**: Verify all details
+5. **Execute or Schedule**: Run immediately or set for later
+
+### CSV Upload Format
+
+**Equal Distribution CSV:**
+```csv
+address
+GRECIPIENT1...
+GRECIPIENT2...
+GRECIPIENT3...
+```
+
+**Weighted Distribution CSV:**
+```csv
+address,weight
+GRECIPIENT1...,100
+GRECIPIENT2...,75
+GRECIPIENT3...,50
+```
+
+**Claimable Airdrop CSV:**
+```csv
+address,amount
+GRECIPIENT1...,1000
+GRECIPIENT2...,500
+GRECIPIENT3...,250
+```
+
+### CSV Upload Process
+
+1. **Download Template**: Use the provided CSV template
+2. **Fill Recipients**: Add addresses (and weights/amounts if needed)
+3. **Validate File**: Upload and let the app validate addresses
+4. **Review Errors**: Fix any invalid addresses or formatting
+5. **Confirm Upload**: Proceed with validated recipient list
+
+### Batch Execution
+
+For large airdrops, the web app automatically handles batch processing:
+
+1. **Batch Size**: Optimal batch sizes are calculated automatically
+2. **Progress Tracking**: Real-time progress bar and recipient count
+3. **Error Handling**: Failed batches are retried automatically
+4. **Completion**: Notification when all batches are complete
+
+<CalloutBox type="info" title="Gas Optimization">
+The web app optimizes batch sizes for Stellar's network characteristics, typically processing 100-200 recipients per batch for best performance.
+</CalloutBox>
+
+## Exploring Launches
+
+### Launch Explorer
+
+The explorer provides multiple ways to discover tokens:
+- **Recent Launches**: Newest tokens on the platform
+- **Popular Launches**: Most active or highest volume
+- **Category Browse**: Filter by token category
+- **Verified Launches**: Only verified tokens
+- **Search**: Find specific tokens by name or symbol
+
+### Launch Details Page
+
+Each launch has a detailed page showing:
+- **Token Information**: Name, symbol, supply, description
+- **Launch Metrics**: Launch date, creator, transaction details  
+- **Market Data**: Current supply, holder count (if available)
+- **Social Links**: Website, Twitter, Discord, etc.
+- **Verification Status**: Whether the launch is verified
+
+### Filtering and Search
+
+**Category Filters:**
+- DeFi: Decentralized finance tokens
+- Gaming: Gaming and metaverse tokens
+- NFT: NFT collection tokens
+- Utility: General utility tokens
+- Community: Community and social tokens
+- Governance: DAO governance tokens
+
+**Advanced Filters:**
+- **Launch Date**: Filter by when tokens were launched
+- **Supply Range**: Filter by total token supply
+- **Verification Status**: Only verified or all launches
+- **Creator**: Find launches by specific creators
+
+### Launch Analytics
+
+**Ecosystem Statistics:**
+- Total launches on the platform
+- Launches by category breakdown
+- Recent launch trends
+- Top creators by launch count
+
+**Individual Launch Metrics:**
+- Days since launch
+- Token distribution events (airdrops, vesting)
+- Associated vesting schedules
+- Community engagement metrics
+
+## Portfolio Management
+
+### Your Portfolio
+
+The portfolio section shows:
+- **Launched Tokens**: All tokens you've created
+- **Token Holdings**: Tokens you own from launches/claims
+- **Vesting Positions**: Your beneficiary vesting schedules
+- **Activity Timeline**: Recent transactions and events
+
+### Token Management
+
+For tokens you've launched:
+- **Supply Management**: Mint or burn tokens (if admin)
+- **Transfer Admin**: Transfer admin privileges to another address
+- **Update Metadata**: Modify launch information in registry
+- **Analytics**: View adoption and distribution metrics
+
+### Vesting Management
+
+For your beneficiary positions:
+- **Claimable Amounts**: See what you can claim across all schedules
+- **Claim History**: Track your previous claims
+- **Bulk Claims**: Claim from multiple schedules simultaneously
+- **Schedule Details**: View complete vesting timelines
+
+## Mobile Experience
+
+### Responsive Design
+
+The web app is fully optimized for mobile:
+- **Touch-Friendly**: Large buttons and touch targets
+- **Mobile Navigation**: Collapsible sidebar and mobile menu
+- **Form Optimization**: Mobile-optimized form inputs
+- **Fast Loading**: Optimized assets for mobile networks
+
+### Mobile Wallet Integration
+
+**Freighter Mobile:**
+- Deep linking support for mobile transactions
+- QR code scanning for address input
+- Mobile-optimized transaction confirmations
+
+**Alternative Access:**
+- WalletConnect for hardware wallet support
+- Copy/paste workflow for manual transaction signing
+- Mobile web browser compatibility
+
+## Security Features
+
+### Transaction Security
+
+- **Transaction Preview**: Always review before signing
+- **Fee Transparency**: Clear fee breakdown for all operations
+- **Network Verification**: Confirm correct network before transactions
+- **Address Validation**: Automatic validation of Stellar addresses
+
+### Data Privacy
+
+- **Local Storage**: Sensitive data stays in your browser
+- **No Account System**: No registration or personal data required
+- **Wallet-Only Auth**: Authentication only through wallet connection
+- **Open Source**: All code is publicly auditable
+
+### Best Practices
+
+1. **Verify URLs**: Always check you're on the official domain
+2. **Check Network**: Ensure correct network (testnet/mainnet)
+3. **Review Transactions**: Carefully review all transaction details
+4. **Secure Wallet**: Keep your wallet seed phrase secure
+5. **Regular Backups**: Export important data regularly
+
+## Troubleshooting
+
+### Common Issues
+
+**Wallet Connection Problems:**
+1. Ensure Freighter is installed and unlocked
+2. Check you're on a supported browser (Chrome, Firefox, Edge)
+3. Clear browser cache and cookies
+4. Try refreshing the page
+5. Check Freighter network matches app network
+
+**Transaction Failures:**
+1. Verify sufficient XLM balance for fees
+2. Check transaction parameters are correct
+3. Ensure you have permission for the operation
+4. Try increasing the fee limit
+5. Check network status for congestion
+
+**CSV Upload Issues:**
+1. Verify CSV format matches the template
+2. Check all addresses are valid Stellar addresses
+3. Remove empty rows or invalid data
+4. Ensure file size is under the limit
+5. Try uploading in smaller batches
+
+### Getting Help
+
+**In-App Support:**
+- Help tooltips throughout the interface
+- FAQ section with common questions
+- Error messages with suggested solutions
+- Support chat for complex issues
+
+**Community Resources:**
+- Stellar Discord community
+- GitHub repository for bug reports
+- Documentation for detailed guides
+- Video tutorials for visual learners
+
+### Performance Tips
+
+**For Large Operations:**
+- Use smaller batch sizes for airdrops (50-100 recipients)
+- Process vesting schedules in batches during high network activity
+- Clear browser cache periodically
+- Close other browser tabs during complex operations
+- Use desktop for large CSV uploads when possible
+
+<CalloutBox type="success" title="Web App Mastery">
+The web app makes Stellar Launchpad accessible to everyone. Take advantage of the visual interfaces and batch processing tools to efficiently manage your token ecosystem.
+</CalloutBox>
+
+</div>
