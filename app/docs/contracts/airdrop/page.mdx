@@ -1,0 +1,804 @@
+import { DocHeader } from '@/components/DocHeader'
+import { CalloutBox } from '@/components/CalloutBox'
+import { FunctionRef } from '@/components/FunctionRef'
+import { NetworkBadge } from '@/components/NetworkBadge'
+
+<DocHeader 
+  title="Airdrop Contract" 
+  description="Distribute tokens to communities with equal, weighted, and claimable distribution models"
+  breadcrumbs={[
+    { label: 'Docs', href: '/docs' },
+    { label: 'Contracts', href: '/docs/contracts' },
+    { label: 'Airdrop Contract', href: '/docs/contracts/airdrop' }
+  ]}
+/>
+
+<div className="max-w-7xl mx-auto px-6 py-12 prose">
+
+## Overview
+
+The Airdrop Contract enables projects to distribute tokens to their communities efficiently and fairly. It supports multiple distribution models and handles large-scale airdrops with gas optimization for the Stellar network.
+
+### Distribution Models
+
+- **Equal Distribution**: Every recipient gets the same amount
+- **Weighted Distribution**: Recipients get amounts based on their weight/score
+- **Claimable Distribution**: Recipients claim tokens themselves (gas-free for sender)
+
+### Key Features
+
+- **Batch Operations**: Process thousands of recipients efficiently
+- **Multiple Models**: Support for equal, weighted, and claimable airdrops
+- **CSV Import Support**: Easy integration with spreadsheet data
+- **Gas Optimization**: Minimized transaction costs on Stellar
+- **Claim Management**: Track claimed vs unclaimed tokens
+- **Deadline Support**: Set claim deadlines for claimable airdrops
+
+<CalloutBox type="info" title="Contract Address">
+**<NetworkBadge network="testnet" />** `CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC`  
+**<NetworkBadge network="mainnet" />** `C3333333333333333333333333333333333333333333333333333333`
+</CalloutBox>
+
+## Distribution Models Explained
+
+### Equal Distribution
+
+Every recipient receives exactly the same amount:
+
+```
+Total Airdrop: 1,000,000 tokens
+Recipients: 10,000 addresses  
+Amount per recipient: 100 tokens each
+
+Gas cost: Sender pays for all distributions
+Completion: Immediate upon transaction confirmation
+```
+
+### Weighted Distribution  
+
+Recipients receive amounts based on their weight or score:
+
+```
+Total Airdrop: 1,000,000 tokens
+Recipient A: Weight 100 → Gets 100,000 tokens (10%)
+Recipient B: Weight 50  → Gets 50,000 tokens (5%)  
+Recipient C: Weight 25  → Gets 25,000 tokens (2.5%)
+... (825,000 tokens to remaining recipients)
+
+Total Weight: 1,000 points
+Distribution: (recipient_weight / total_weight) * total_tokens
+```
+
+### Claimable Distribution
+
+Recipients claim their allocation themselves:
+
+```  
+Total Airdrop: 1,000,000 tokens
+Claim Period: 90 days
+Gas Model: Recipients pay their own gas to claim
+
+Benefits:
+- Sender only pays gas for setup
+- Recipients can claim when convenient  
+- Unclaimed tokens can be recovered after deadline
+```
+
+## Contract Functions
+
+### Setup Functions
+
+<FunctionRef
+  name="create_equal_airdrop"
+  signature="create_equal_airdrop(token: Address, recipients: Vec<Address>, amount_per_recipient: u128, execute_immediately: bool)"
+  description="Creates an airdrop where all recipients receive the same amount. Can execute immediately or set up for later execution."
+  parameters={[
+    {
+      name: "token",
+      type: "Address",
+      description: "The token contract address to distribute"
+    },
+    {
+      name: "recipients", 
+      type: "Vec<Address>",
+      description: "Array of recipient addresses"
+    },
+    {
+      name: "amount_per_recipient",
+      type: "u128", 
+      description: "Amount each recipient receives (in stroops)"
+    },
+    {
+      name: "execute_immediately",
+      type: "bool",
+      description: "Whether to distribute tokens immediately or set up for claiming"
+    }
+  ]}
+  returns={{
+    type: "u64",
+    description: "The unique airdrop ID"
+  }}
+  errors={[
+    "InsufficientBalance - Creator doesn't have enough tokens",
+    "InsufficientAllowance - Contract not approved to spend tokens",
+    "EmptyRecipients - Recipients array cannot be empty", 
+    "InvalidAmount - Amount per recipient must be greater than 0"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Equal airdrop: 100 tokens to each recipient
+stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GCREATOR... \\
+  -- create_equal_airdrop \\
+  --token CAAAA... \\
+  --recipients '["GRECIPIENT1...", "GRECIPIENT2...", "GRECIPIENT3..."]' \\
+  --amount_per_recipient 1000000000 \\
+  --execute_immediately true
+
+# Returns: airdrop_id = 1`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="create_weighted_airdrop"
+  signature="create_weighted_airdrop(token: Address, recipients: Vec<WeightedRecipient>, total_amount: u128, execute_immediately: bool)"
+  description="Creates an airdrop where recipients receive amounts based on their assigned weights."
+  parameters={[
+    {
+      name: "token",
+      type: "Address",
+      description: "The token contract address to distribute"
+    },
+    {
+      name: "recipients",
+      type: "Vec<WeightedRecipient>",
+      description: "Array of recipients with their weights { address: Address, weight: u64 }"
+    },
+    {
+      name: "total_amount", 
+      type: "u128",
+      description: "Total amount of tokens to distribute"
+    },
+    {
+      name: "execute_immediately",
+      type: "bool",
+      description: "Whether to distribute tokens immediately or set up for claiming"
+    }
+  ]}
+  returns={{
+    type: "u64",
+    description: "The unique airdrop ID"
+  }}
+  errors={[
+    "InsufficientBalance - Creator doesn't have enough tokens",
+    "InsufficientAllowance - Contract not approved to spend tokens",
+    "EmptyRecipients - Recipients array cannot be empty",
+    "InvalidWeights - All weights must be greater than 0"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Weighted airdrop based on contribution scores
+stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GCREATOR... \\
+  -- create_weighted_airdrop \\
+  --token CAAAA... \\
+  --recipients '[
+    {"address": "GRECIPIENT1...", "weight": 100},
+    {"address": "GRECIPIENT2...", "weight": 75}, 
+    {"address": "GRECIPIENT3...", "weight": 50}
+  ]' \\
+  --total_amount 10000000000000 \\
+  --execute_immediately false
+
+# Recipients get: 44.4%, 33.3%, 22.2% respectively`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="create_claimable_airdrop"
+  signature="create_claimable_airdrop(token: Address, merkle_root: BytesN<32>, total_amount: u128, claim_deadline: Option<u64>)"
+  description="Creates a claimable airdrop using a Merkle tree for gas-efficient verification. Recipients must provide proofs to claim."
+  parameters={[
+    {
+      name: "token",
+      type: "Address",
+      description: "The token contract address to distribute"
+    },
+    {
+      name: "merkle_root",
+      type: "BytesN<32>",
+      description: "Merkle root hash of the recipient tree"
+    },
+    {
+      name: "total_amount",
+      type: "u128", 
+      description: "Total amount of tokens allocated for claims"
+    },
+    {
+      name: "claim_deadline",
+      type: "Option<u64>",
+      description: "Optional deadline timestamp for claims",
+      optional: true
+    }
+  ]}
+  returns={{
+    type: "u64",
+    description: "The unique airdrop ID"
+  }}
+  errors={[
+    "InsufficientBalance - Creator doesn't have enough tokens",
+    "InsufficientAllowance - Contract not approved to spend tokens",
+    "InvalidMerkleRoot - Merkle root cannot be empty",
+    "InvalidDeadline - Deadline must be in the future"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Claimable airdrop with 90-day deadline
+stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GCREATOR... \\
+  -- create_claimable_airdrop \\
+  --token CAAAA... \\
+  --merkle_root 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \\
+  --total_amount 10000000000000 \\
+  --claim_deadline 1717545600`}
+    </pre>
+  }
+/>
+
+### Execution Functions
+
+<FunctionRef
+  name="execute_airdrop"
+  signature="execute_airdrop(airdrop_id: u64, batch_size: Option<u32>)"
+  description="Executes a prepared airdrop in batches. Only needed if execute_immediately was false during creation."
+  parameters={[
+    {
+      name: "airdrop_id",
+      type: "u64",
+      description: "The ID of the airdrop to execute"
+    },
+    {
+      name: "batch_size",
+      type: "Option<u32>", 
+      description: "Number of recipients to process in this batch (optional, defaults to optimal size)",
+      optional: true
+    }
+  ]}
+  returns={{
+    type: "ExecutionResult",
+    description: "Result with processed count and completion status"
+  }}
+  errors={[
+    "AirdropNotFound - No airdrop exists with this ID",
+    "NotCreator - Only the airdrop creator can execute it",
+    "AlreadyExecuted - This airdrop has already been completed",
+    "InvalidBatchSize - Batch size must be between 1 and 1000"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Execute airdrop in batches of 100
+stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GCREATOR... \\
+  -- execute_airdrop \\
+  --airdrop_id 1 \\
+  --batch_size 100`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="claim_airdrop"
+  signature="claim_airdrop(airdrop_id: u64, recipient: Address, amount: u128, proof: Vec<BytesN<32>>)"
+  description="Claims tokens from a claimable airdrop by providing a valid Merkle proof."
+  parameters={[
+    {
+      name: "airdrop_id", 
+      type: "u64",
+      description: "The ID of the claimable airdrop"
+    },
+    {
+      name: "recipient",
+      type: "Address",
+      description: "The recipient address (must match caller)"
+    },
+    {
+      name: "amount",
+      type: "u128",
+      description: "The amount being claimed" 
+    },
+    {
+      name: "proof",
+      type: "Vec<BytesN<32>>",
+      description: "Merkle proof for this claim"
+    }
+  ]}
+  returns={{
+    type: "void",
+    description: "No return value on successful claim"
+  }}
+  errors={[
+    "AirdropNotFound - No airdrop exists with this ID", 
+    "NotClaimable - This airdrop is not claimable type",
+    "InvalidProof - Merkle proof verification failed",
+    "AlreadyClaimed - Recipient has already claimed",
+    "ClaimDeadlinePassed - The claim period has expired"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`# Claim tokens with Merkle proof
+stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GRECIPIENT... \\
+  -- claim_airdrop \\
+  --airdrop_id 1 \\
+  --recipient GRECIPIENT... \\
+  --amount 1000000000 \\
+  --proof '[
+    "0xabcd1234...",
+    "0xef567890...", 
+    "0x12345678..."
+  ]'`}
+    </pre>
+  }
+/>
+
+### Query Functions
+
+<FunctionRef
+  name="get_airdrop_info"
+  signature="get_airdrop_info(airdrop_id: u64) -> AirdropInfo"
+  description="Returns complete information about an airdrop including status, recipients, and distribution details."
+  parameters={[
+    {
+      name: "airdrop_id",
+      type: "u64",
+      description: "The ID of the airdrop to query"
+    }
+  ]}
+  returns={{
+    type: "AirdropInfo", 
+    description: "Struct containing all airdrop details"
+  }}
+  errors={[
+    "AirdropNotFound - No airdrop exists with this ID"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GUSER... \\
+  -- get_airdrop_info \\
+  --airdrop_id 1
+
+# Returns AirdropInfo struct with all details`}
+    </pre>
+  }
+/>
+
+<FunctionRef
+  name="is_claimed"
+  signature="is_claimed(airdrop_id: u64, recipient: Address) -> bool"
+  description="Checks whether a specific recipient has already claimed from a claimable airdrop."
+  parameters={[
+    {
+      name: "airdrop_id",
+      type: "u64",
+      description: "The ID of the airdrop to check"
+    },
+    {
+      name: "recipient",
+      type: "Address", 
+      description: "The recipient address to check"
+    }
+  ]}
+  returns={{
+    type: "bool",
+    description: "True if the recipient has claimed, false otherwise"
+  }}
+  errors={[
+    "AirdropNotFound - No airdrop exists with this ID"
+  ]}
+  example={
+    <pre className="bg-gray-900 text-green-400 p-4 rounded text-sm overflow-x-auto">
+{`stellar contract invoke \\
+  --id CCCCC... \\
+  --source-account GUSER... \\
+  -- is_claimed \\
+  --airdrop_id 1 \\
+  --recipient GRECIPIENT...
+
+# Returns: false (not yet claimed)`}
+    </pre>
+  }
+/>
+
+## CSV-Based Airdrop Walkthrough
+
+Here's a complete example of running an airdrop using CSV data:
+
+### Step 1: Prepare Your CSV Data
+
+Create a CSV file with recipient addresses and amounts:
+
+```csv
+address,amount,weight
+GABC123...,100000000000,100
+GDEF456...,75000000000,75  
+GHIJ789...,50000000000,50
+GKLM012...,25000000000,25
+```
+
+### Step 2: Process CSV Data
+
+```typescript
+import fs from 'fs'
+import csv from 'csv-parser'
+
+interface AirdropRecipient {
+  address: string
+  amount: string
+  weight?: number
+}
+
+async function loadAirdropData(csvPath: string): Promise<AirdropRecipient[]> {
+  const recipients: AirdropRecipient[] = []
+  
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(csvPath)
+      .pipe(csv())
+      .on('data', (row) => {
+        recipients.push({
+          address: row.address,
+          amount: row.amount,
+          weight: row.weight ? parseInt(row.weight) : undefined
+        })
+      })
+      .on('end', () => resolve(recipients))
+      .on('error', reject)
+  })
+}
+```
+
+### Step 3: Execute Equal Distribution Airdrop
+
+```typescript
+async function executeEqualAirdrop(
+  recipients: AirdropRecipient[],
+  amountPerRecipient: string
+) {
+  const addresses = recipients.map(r => r.address)
+  
+  // Create and execute airdrop immediately
+  const airdropId = await contract.call('create_equal_airdrop', {
+    token: TOKEN_ADDRESS,
+    recipients: addresses,
+    amount_per_recipient: amountPerRecipient,
+    execute_immediately: true
+  })
+  
+  console.log(`Equal airdrop created with ID: ${airdropId}`)
+  return airdropId
+}
+```
+
+### Step 4: Execute Weighted Distribution Airdrop
+
+```typescript
+async function executeWeightedAirdrop(
+  recipients: AirdropRecipient[],
+  totalAmount: string
+) {
+  const weightedRecipients = recipients.map(r => ({
+    address: r.address,
+    weight: r.weight || 1
+  }))
+  
+  const airdropId = await contract.call('create_weighted_airdrop', {
+    token: TOKEN_ADDRESS,
+    recipients: weightedRecipients, 
+    total_amount: totalAmount,
+    execute_immediately: false // Execute in batches
+  })
+  
+  // Execute in batches of 100
+  let completed = false
+  while (!completed) {
+    const result = await contract.call('execute_airdrop', {
+      airdrop_id: airdropId,
+      batch_size: 100
+    })
+    completed = result.completed
+    console.log(`Processed ${result.processed_count} recipients`)
+  }
+  
+  return airdropId
+}
+```
+
+## Merkle Tree Implementation for Claimable Airdrops
+
+### Generating Merkle Proofs
+
+```typescript
+import { keccak256 } from 'js-sha3'
+
+class MerkleTree {
+  private leaves: Buffer[]
+  private tree: Buffer[][]
+  
+  constructor(recipients: Array<{address: string, amount: string}>) {
+    // Create leaf nodes from recipient data
+    this.leaves = recipients.map(recipient => 
+      Buffer.from(
+        keccak256(
+          Buffer.concat([
+            Buffer.from(recipient.address, 'hex'),
+            Buffer.from(recipient.amount)
+          ])
+        ), 'hex'
+      )
+    )
+    
+    this.tree = this.buildTree(this.leaves)
+  }
+  
+  private buildTree(leaves: Buffer[]): Buffer[][] {
+    const tree = [leaves]
+    
+    while (tree[tree.length - 1].length > 1) {
+      const currentLevel = tree[tree.length - 1]
+      const nextLevel: Buffer[] = []
+      
+      for (let i = 0; i < currentLevel.length; i += 2) {
+        const left = currentLevel[i]
+        const right = currentLevel[i + 1] || left
+        
+        const combined = Buffer.concat([left, right].sort(Buffer.compare))
+        const hash = Buffer.from(keccak256(combined), 'hex')
+        nextLevel.push(hash)
+      }
+      
+      tree.push(nextLevel)
+    }
+    
+    return tree
+  }
+  
+  getRoot(): string {
+    return '0x' + this.tree[this.tree.length - 1][0].toString('hex')
+  }
+  
+  getProof(index: number): string[] {
+    const proof: string[] = []
+    
+    for (let level = 0; level < this.tree.length - 1; level++) {
+      const currentLevel = this.tree[level]
+      const pairIndex = index % 2 === 0 ? index + 1 : index - 1
+      
+      if (pairIndex < currentLevel.length) {
+        proof.push('0x' + currentLevel[pairIndex].toString('hex'))
+      }
+      
+      index = Math.floor(index / 2)
+    }
+    
+    return proof
+  }
+}
+```
+
+### Creating Claimable Airdrop
+
+```typescript
+async function createClaimableAirdrop(recipients: AirdropRecipient[]) {
+  // Generate Merkle tree
+  const merkleTree = new MerkleTree(recipients)
+  const merkleRoot = merkleTree.getRoot()
+  
+  // Calculate total allocation
+  const totalAmount = recipients
+    .reduce((sum, r) => sum + BigInt(r.amount), 0n)
+    .toString()
+  
+  // Set 90-day claim deadline
+  const claimDeadline = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60)
+  
+  const airdropId = await contract.call('create_claimable_airdrop', {
+    token: TOKEN_ADDRESS,
+    merkle_root: merkleRoot,
+    total_amount: totalAmount,
+    claim_deadline: claimDeadline
+  })
+  
+  // Store proofs for later claiming
+  const proofs = recipients.map((recipient, index) => ({
+    address: recipient.address,
+    amount: recipient.amount,
+    proof: merkleTree.getProof(index)
+  }))
+  
+  return { airdropId, proofs }
+}
+```
+
+## Batch Distribution Gas Considerations
+
+### Optimal Batch Sizing
+
+Stellar has different gas considerations compared to Ethereum:
+
+```typescript
+// Stellar-optimized batch sizes
+const BATCH_SIZES = {
+  equal_distribution: 200,     // Can handle more equal distributions
+  weighted_distribution: 150,  // Slightly fewer due to calculations
+  merkle_claims: 1000         // Claims are individual, very efficient
+}
+
+async function executeLargeAirdrop(airdropId: number, totalRecipients: number) {
+  const batchSize = BATCH_SIZES.weighted_distribution
+  const totalBatches = Math.ceil(totalRecipients / batchSize)
+  
+  for (let batch = 0; batch < totalBatches; batch++) {
+    const result = await contract.call('execute_airdrop', {
+      airdrop_id: airdropId,
+      batch_size: batchSize
+    })
+    
+    console.log(`Batch ${batch + 1}/${totalBatches} completed`)
+    console.log(`Processed: ${result.processed_count} recipients`)
+    
+    if (result.completed) {
+      console.log('Airdrop execution completed!')
+      break
+    }
+    
+    // Small delay between batches to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+}
+```
+
+### Gas Cost Estimation
+
+```typescript
+function estimateAirdropCost(
+  recipientCount: number, 
+  distributionType: 'equal' | 'weighted' | 'claimable'
+): number {
+  const BASE_FEE = 100 // stroops
+  const PER_RECIPIENT_FEE = {
+    equal: 50,      // stroops per recipient
+    weighted: 75,   // slightly higher for calculations  
+    claimable: 10   // just setup cost, recipients pay to claim
+  }
+  
+  const setupCost = BASE_FEE + (recipientCount * PER_RECIPIENT_FEE[distributionType])
+  
+  return setupCost // Total cost in stroops
+}
+
+// Example: 10,000 recipient weighted airdrop
+const cost = estimateAirdropCost(10000, 'weighted')
+console.log(`Estimated cost: ${cost / 1e7} XLM`) // ~0.075 XLM
+```
+
+## Events
+
+The airdrop contract emits detailed events for tracking:
+
+### AirdropCreated Event
+```rust
+AirdropCreated {
+    airdrop_id: u64,
+    creator: Address,
+    token: Address,
+    distribution_type: String, // "equal", "weighted", "claimable"
+    total_amount: u128,
+    recipient_count: u32,
+    claim_deadline: Option<u64>
+}
+```
+
+### TokensDistributed Event
+```rust
+TokensDistributed {
+    airdrop_id: u64,
+    recipient: Address,
+    amount: u128,
+    batch_index: u32
+}
+```
+
+### TokensClaimed Event  
+```rust
+TokensClaimed {
+    airdrop_id: u64,
+    recipient: Address,
+    amount: u128,
+    claim_time: u64
+}
+```
+
+### AirdropCompleted Event
+```rust
+AirdropCompleted {
+    airdrop_id: u64,
+    total_distributed: u128,
+    recipient_count: u32,
+    completion_time: u64
+}
+```
+
+## Security Considerations
+
+<CalloutBox type="warning" title="Merkle Tree Security">
+For claimable airdrops, ensure your Merkle tree implementation is secure and proofs are generated correctly. Invalid proofs will prevent legitimate claims.
+</CalloutBox>
+
+### Best Practices
+
+1. **Validate Recipient Lists**: Remove duplicates and validate all addresses before creating airdrops
+2. **Test on Testnet**: Always test large airdrops on testnet first
+3. **Batch Execution**: Use appropriate batch sizes to avoid transaction failures
+4. **Monitor Progress**: Set up monitoring for airdrop execution and claims
+5. **Secure Merkle Data**: For claimable airdrops, securely store and serve proof data
+
+### Access Control
+
+- **Airdrop Creation**: Anyone with sufficient tokens can create airdrops
+- **Airdrop Execution**: Only the creator can execute prepared airdrops  
+- **Token Claims**: Only recipients with valid proofs can claim from claimable airdrops
+- **Query Functions**: All query functions are public
+
+## Troubleshooting
+
+### Common Issues
+
+**"InsufficientAllowance" Error**
+- Approve the airdrop contract to spend your tokens before creating airdrops
+- Ensure the approved amount covers the total airdrop allocation
+
+**"InvalidProof" Error (Claimable Airdrops)**
+- Verify the Merkle proof is generated correctly
+- Ensure the recipient address and amount match the original tree data
+- Check that the claim hasn't already been processed
+
+**"ClaimDeadlinePassed" Error** 
+- The claim period has expired for this airdrop
+- Creators can recover unclaimed tokens after the deadline
+
+**Batch Execution Failures**
+- Reduce batch size if transactions are failing
+- Ensure sufficient gas/fee budget for large batches
+- Check network congestion and retry if needed
+
+### Recovery Functions
+
+```typescript
+// Recover unclaimed tokens after deadline
+async function recoverUnclaimedTokens(airdropId: number) {
+  const airdropInfo = await contract.call('get_airdrop_info', {
+    airdrop_id: airdropId
+  })
+  
+  if (airdropInfo.claim_deadline && Date.now() > airdropInfo.claim_deadline * 1000) {
+    const recovered = await contract.call('recover_unclaimed_tokens', {
+      airdrop_id: airdropId
+    })
+    
+    console.log(`Recovered ${recovered} unclaimed tokens`)
+    return recovered
+  }
+  
+  throw new Error('Claim deadline has not passed yet')
+}
+```
+
+</div>
