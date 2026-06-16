@@ -6,6 +6,23 @@ Comprehensive documentation for the Stellar Launchpad ecosystem - a complete tok
 
 Stellar Launchpad enables anyone to launch tokens on Stellar with built-in features for vesting, airdrops, and ecosystem discovery. This documentation covers all four smart contracts, the web app, CLI usage, and integration guides.
 
+## Stellar Integration
+
+This platform is built natively on the [Stellar network](https://stellar.org), leveraging its smart contract layer (Soroban) for all on-chain operations.
+
+- **Network**: Stellar Mainnet / Testnet
+- **Smart Contracts**: Written in Rust, compiled to WASM, deployed via [Soroban](https://soroban.stellar.org)
+- **SDK**: [@stellar/stellar-sdk](https://www.npmjs.com/package/@stellar/stellar-sdk) for client-side interaction
+- **Wallets**: Compatible with Freighter, xBull, and any WalletConnect-enabled Stellar wallet
+- **Assets**: Tokens follow the Stellar Asset Contract (SAC) standard
+
+```ts
+import { Contract, SorobanRpc, TransactionBuilder } from "@stellar/stellar-sdk";
+
+const server = new SorobanRpc.Server("https://soroban-testnet.stellar.org");
+const contract = new Contract("<CONTRACT_ADDRESS>");
+```
+
 ## Quick Start
 
 ```bash
@@ -34,6 +51,8 @@ npm run build
 
 ## Features
 
+- **Stellar / Soroban** smart contracts (Rust + WASM)
+- **Stellar SDK** for wallet connection and transaction signing
 - **Next.js 14** with App Router
 - **TypeScript** for type safety
 - **Tailwind CSS** for styling
