@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Sidebar } from '@/components/Sidebar'
+import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Stellar Launchpad Docs',
@@ -19,6 +20,7 @@ export default function RootLayout({
           <Sidebar />
           <main className="flex-1 lg:ml-64">
             {children}
+            <Footer />
           </main>
         </div>
       </body>
