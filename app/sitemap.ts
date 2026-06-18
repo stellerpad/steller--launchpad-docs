@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://docs.launchpad.stellar.org'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://stellerlaunchpad.netlify.app'
 
   return [
     {

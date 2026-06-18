@@ -5,7 +5,15 @@ import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Stellar Launchpad Docs',
-  description: 'Documentation for the Stellar Launchpad ecosystem',
+  description: 'Complete documentation for the Stellar Launchpad token ecosystem — launch tokens, manage vesting, and run airdrops on Stellar.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://stellerlaunchpad.netlify.app'),
+  openGraph: {
+    title: 'Stellar Launchpad Docs',
+    description: 'Complete documentation for the Stellar Launchpad token ecosystem',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://stellerlaunchpad.netlify.app',
+    siteName: 'Stellar Launchpad Docs',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({

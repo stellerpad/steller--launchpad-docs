@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { SearchBox } from '@/components/SearchBox'
 
 const navigation = [
   {
@@ -77,8 +78,13 @@ export function Sidebar() {
           <p className="text-sm text-gray-400 mt-1">Documentation</p>
         </div>
 
+        {/* Search */}
+        <div className="px-4 py-3 border-b border-gray-700">
+          <SearchBox />
+        </div>
+
         {/* Navigation */}
-        <nav className="p-4 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+        <nav className="p-4 space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
           {navigation.map((item) => (
             <div key={item.name}>
               <Link
