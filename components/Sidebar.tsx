@@ -117,7 +117,7 @@ export function Sidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
           <div className="space-y-2 text-sm text-gray-400">
             <a
-              href="https://github.com/<your-org>/stellar-launchpad-core"
+              href="https://github.com/stellerpad/stellar-launchpad-core"
               target="_blank"
               rel="noopener noreferrer"
               className="block hover:text-white"
@@ -125,7 +125,7 @@ export function Sidebar() {
               Core Contracts →
             </a>
             <a
-              href="https://github.com/<your-org>/stellar-launchpad-web"
+              href="https://github.com/stellerpad/stellar-launchpad-web"
               target="_blank"
               rel="noopener noreferrer"
               className="block hover:text-white"

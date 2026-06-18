@@ -25,7 +25,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://github.com/<your-org>"
+                href="https://github.com/stellerpad"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white transition-colors"
@@ -87,7 +87,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a
-                  href="https://github.com/<your-org>/stellar-launchpad-core"
+                  href="https://github.com/stellerpad/stellar-launchpad-core"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"
@@ -97,7 +97,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/<your-org>/stellar-launchpad-web"
+                  href="https://github.com/stellerpad/stellar-launchpad-web"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"
@@ -139,7 +139,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/<your-org>/stellar-launchpad-docs/issues"
+                  href="https://github.com/stellerpad/stellar-launchpad-docs/issues"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"

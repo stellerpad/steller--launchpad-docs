@@ -63,7 +63,7 @@ export default function Error({
             <h2 className="text-xl font-semibold text-white mb-4">Need Help?</h2>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="https://github.com/<your-org>/stellar-launchpad-docs/issues"
+                href="https://github.com/stellerpad/stellar-launchpad-docs/issues"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-400 hover:text-primary-300 underline"

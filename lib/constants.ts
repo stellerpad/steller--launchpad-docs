@@ -93,8 +93,8 @@ export const LINKS = {
   STELLAR_DOCS: 'https://developers.stellar.org',
   FREIGHTER_WALLET: 'https://freighter.app',
   STELLAR_LABORATORY: 'https://laboratory.stellar.org',
-  GITHUB_CORE: 'https://github.com/<your-org>/stellar-launchpad-core',
-  GITHUB_WEB: 'https://github.com/<your-org>/stellar-launchpad-web',
+  GITHUB_CORE: 'https://github.com/stellerpad/stellar-launchpad-core',
+  GITHUB_WEB: 'https://github.com/stellerpad/stellar-launchpad-web',
   DISCORD: 'https://discord.gg/stellar',
   TWITTER: 'https://twitter.com/stellarorg'
 } as const

@@ -101,7 +101,7 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li>
                   <a 
-                    href="https://github.com/<your-org>/stellar-launchpad-core" 
+                    href="https://github.com/stellerpad/stellar-launchpad-core" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-primary-400 hover:text-primary-300 flex items-center gap-2"
@@ -112,7 +112,7 @@ export default function HomePage() {
                 </li>
                 <li>
                   <a 
-                    href="https://github.com/<your-org>/stellar-launchpad-web" 
+                    href="https://github.com/stellerpad/stellar-launchpad-web" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-primary-400 hover:text-primary-300 flex items-center gap-2"

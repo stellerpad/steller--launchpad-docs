@@ -14,7 +14,7 @@ Thank you for your interest in contributing to the Stellar Launchpad documentati
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-org>/stellar-launchpad-docs.git
+git clone https://github.com/stellerpad/stellar-launchpad-docs.git
 cd stellar-launchpad-docs
 
 # Install dependencies

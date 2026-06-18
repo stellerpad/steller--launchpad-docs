@@ -62,8 +62,8 @@ npm run build
 
 ## Sister Repositories
 
-- **[Core Contracts](https://github.com/<your-org>/stellar-launchpad-core)**: Smart contract source code
-- **[Web Dashboard](https://github.com/<your-org>/stellar-launchpad-web)**: Web application interface
+- **[Core Contracts](https://github.com/stellerpad/stellar-launchpad-core)**: Smart contract source code
+- **[Web Dashboard](https://github.com/stellerpad/stellar-launchpad-web)**: Web application interface
 
 ## Contributing
 
